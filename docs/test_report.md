@@ -1,9 +1,9 @@
 # MoneyLens Comprehensive Test Execution Report
 
 - **Date**: 2026-10-18
-- **Commit Hash**: `4dc6172b288042a61d6e04640750920c6bd57905`
+- **Commit Hash**: `f0adc6728c7a3d98b3b7a915a1f2bc2ab184cb38`
 - **Environment**: Node.js v20.x, Python 3.11/3.14, Vitest v5.0.5, Jest v29.7.0, Pytest v9.1.1
-- **Overall Status**: **PASSED (100% Pass Rate — 212 / 212 Automated Tests)**
+- **Overall Status**: **PASSED (100% Pass Rate — 219 / 219 Automated Tests)**
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Test Suite Layer | Target Service | Framework | Total Suites / Files | Tests Passed | Tests Failed | Execution Duration |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **Backend API Gateway & Services** | Node.js / Express | Jest + Supertest | 9 suites | **121** | 0 | 82.2 s |
+| **Backend API Gateway & Services** | Node.js / Express | Jest + Supertest | 9 suites | **123** | 0 | ~85 s |
 | **Frontend UI Components & Forms** | React 18 / Vite | Vitest + RTL | 4 files | **14** | 0 | 3.6 s |
-| **ML Intelligence & RAG Core** | Python / FastAPI | Pytest + AsyncClient | 8 files | **77** | 0 | 2.4 s |
+| **ML Intelligence & RAG Core** | Python / FastAPI | Pytest + AsyncClient | 10 files | **82** | 0 | 6.2 s |
 | **End-to-End User Journey** | Monorepo Full Stack | Native Node E2E Runner | 1 flow | **10 stages** | 0 | 6.8 s |
-| **Total** | | | **22 files** | **212 tests** | **0** | **~95 s** |
+| **Total** | | | **23 files** | **219 tests** | **0** | **~100 s** |
 
 ---
 
@@ -68,7 +68,7 @@ PASS tests/security_regression.test.ts (19.116 s)
 | Suite File | Tests | Focus Area |
 | :--- | :---: | :--- |
 | `security_regression.test.ts` | **28** | Multi-tenant cross-user barriers, adversarial IDs, 1MB/5MB limits, CORS origin filtering, cookie flags |
-| `transactions.test.ts` | **10** | CSV deduplication, pagination, search sanitization, recategorization feedback |
+| `transactions.test.ts` | **16** | CSV/PDF deduplication, pagination, search sanitization, recategorization feedback, PDF parsing |
 | `forecast_and_goals.test.ts` | **12** | Goals CRUD, Monte Carlo goal scoring, SIP compounding, user isolation |
 | `chat_rag.test.ts` | **13** | Grounded financial Q&A, evidence citation, prompt injection defenses, advice disclaimers |
 | `insights_and_reminders.test.ts` | **13** | Anomaly detection, user feedback marking, recurring charge detection, rule-based recommendations |
@@ -76,7 +76,7 @@ PASS tests/security_regression.test.ts (19.116 s)
 | `me.test.ts` | **6** | CAS data export (CSV/JSON), account deletion cascade, preferences |
 | `ml_categorization.test.ts` | **6** | ML service integration, low-confidence review flags, offline fallback |
 | `health.test.ts` | **7** | Liveness, readiness probe (MongoDB connection check), correlation ID tracing |
-| **Total Backend** | **121** | **All 121 Passed** |
+| **Total Backend** | **123** | **All 123 Passed** |
 
 ### 2. Frontend Component & Accessibility Suites (`frontend/src/test`)
 | Test File | Tests | Focus Area |
@@ -95,10 +95,11 @@ PASS tests/security_regression.test.ts (19.116 s)
 | `test_forecast.py` | **11** | Rolling mean, last-value baseline, horizon bounds, zero-variance handling |
 | `test_goals.py` | **15** | Monte Carlo probability scoring, SIP compounding, band classification |
 | `test_insights.py` | **10** | Median + MAD robust z-score anomaly detection, recurring cadence detection |
+| `test_pdf_import.py` | **5** | PDF table extraction (`pdfplumber`), credit card parsing, scanned PDF 422 rejection |
 | `test_rag.py` | **8** | ChromaDB document retrieval, relevance filtering, prompt injection sanitization |
 | `test_security.py` | **4** | `X-Internal-Key` shared secret authentication, 401/403 rejection |
 | `test_health.py` | **4** | Health readiness endpoint (model loaded in memory vs unloaded) |
-| **Total ML Service** | **77** | **All 77 Passed** |
+| **Total ML Service** | **82** | **All 82 Passed** |
 
 ---
 
