@@ -1,0 +1,670 @@
+date,description,amount,type,merchant
+2025-11-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2025-11-01,Ola Cabs Airport Drop,610.00,debit,Ola
+2025-11-01,Chaayos Chai and Bun Maska,306.00,debit,Chaayos
+2025-11-01,Amazon Prime Video Channels Subscription,540.00,debit,Amazon
+2025-11-02,Amazon India Online Purchase,2640.00,debit,Amazon
+2025-11-02,Dentist Consultation & Cleaning,1420.00,debit,Dental Care
+2025-11-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2025-11-03,Google Pay Scratch Card Reward,67.98,credit,Google Pay
+2025-11-04,Zepto 10-Min Grocery Delivery,416.00,debit,Zepto
+2025-11-04,Myntra App Clothing Order,1040.00,debit,Myntra
+2025-11-04,IRCTC Train Ticket Reservation Tatkal,1760.00,debit,IRCTC
+2025-11-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2025-11-05,McDonald's Meal Box,458.00,debit,McDonald's
+2025-11-05,Cult.fit Monthly Fitness Membership,1740.00,debit,Cult.fit
+2025-11-06,Dentist Consultation & Cleaning,1190.00,debit,Dental Care
+2025-11-07,Zomato Restaurant Delivery,770.00,debit,Zomato
+2025-11-07,Namma Metro Smart Card Recharge,280.00,debit,Namma Metro
+2025-11-08,1mg Diagnostic Lab Blood Test,890.00,debit,Tata 1mg
+2025-11-08,Nykaa Personal Care & Grooming,1460.00,debit,Nykaa
+2025-11-08,1mg Diagnostic Lab Blood Test,810.00,debit,Tata 1mg
+2025-11-09,Amazon Prime Video Channels Subscription,520.00,debit,Amazon
+2025-11-09,Decathlon Sports Gear,1120.00,debit,Decathlon
+2025-11-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2025-11-10,Amazon Prime Video Channels Subscription,326.00,debit,Amazon
+2025-11-10,Third Wave Coffee Roasters,295.00,debit,Third Wave Coffee
+2025-11-10,Apollo Pharmacy Medicines & Vitamins,700.00,debit,Apollo Pharmacy
+2025-11-12,BESCOM Bangalore Electricity Bill,1717.48,debit,BESCOM
+2025-11-12,Amazon Prime Video Channels Subscription,590.00,debit,Amazon
+2025-11-12,Subway 6-inch Sub & Drink,370.00,debit,Subway
+2025-11-12,Dentist Consultation & Cleaning,1330.00,debit,Dental Care
+2025-11-13,Namma Metro Smart Card Recharge,247.00,debit,Namma Metro
+2025-11-13,Freelance Consulting Honorarium,24522.10,credit,Freelance Client
+2025-11-14,BookMyShow IMAX Movie Tickets (2x),1280.00,debit,BookMyShow
+2025-11-14,IRCTC Train Ticket Reservation Tatkal,750.00,debit,IRCTC
+2025-11-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2025-11-15,BookMyShow IMAX Movie Tickets (2x),1040.00,debit,BookMyShow
+2025-11-15,Amazon India Online Purchase,810.00,debit,Amazon
+2025-11-16,IRCTC Train Ticket Reservation Tatkal,560.00,debit,IRCTC
+2025-11-16,BookMyShow IMAX Movie Tickets (2x),580.00,debit,BookMyShow
+2025-11-16,Amazon India Online Purchase,4410.00,debit,Amazon
+2025-11-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2025-11-18,BigBasket Monthly Grocery Basket,2780.00,debit,BigBasket
+2025-11-18,Amazon Prime Video Channels Subscription,590.00,debit,Amazon
+2025-11-18,Cult.fit Monthly Fitness Membership,2190.00,debit,Cult.fit
+2025-11-19,Dentist Consultation & Cleaning,1060.00,debit,Dental Care
+2025-11-20,Airtel Postpaid Family Plan Mobile Bill,876.88,debit,Airtel
+2025-11-20,Blinkit Quick Commerce Delivery,248.00,debit,Blinkit
+2025-11-20,Reimbursement for Team Lunch,1006.68,credit,Corporate Reimbursement
+2025-11-21,Subway 6-inch Sub & Drink,354.00,debit,Subway
+2025-11-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2025-11-22,Ola Cabs Airport Drop,910.00,debit,Ola
+2025-11-22,HPCL Petrol Pump Fuel Refill,930.00,debit,HPCL
+2025-11-22,Local Mother Dairy Milk and Curd,210.00,debit,Mother Dairy
+2025-11-23,Nykaa Personal Care & Grooming,590.00,debit,Nykaa
+2025-11-23,Subway 6-inch Sub & Drink,318.00,debit,Subway
+2025-11-24,Apollo Pharmacy Medicines & Vitamins,610.00,debit,Apollo Pharmacy
+2025-11-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2025-11-26,Zomato Restaurant Delivery,348.00,debit,Zomato
+2025-11-28,Starbucks Cold Brew & Sandwich,700.00,debit,Starbucks
+2025-11-30,Swiggy Online Food Order,710.00,debit,Swiggy
+2025-11-30,Blinkit Quick Commerce Delivery,500.00,debit,Blinkit
+2025-12-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2025-12-01,Zomato Restaurant Delivery,474.00,debit,Zomato
+2025-12-01,Myntra App Clothing Order,2650.00,debit,Myntra
+2025-12-02,Dentist Consultation & Cleaning,1500.00,debit,Dental Care
+2025-12-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2025-12-03,Blinkit Quick Commerce Delivery,423.00,debit,Blinkit
+2025-12-03,McDonald's Meal Box,486.00,debit,McDonald's
+2025-12-03,Freelance Consulting Honorarium,8971.81,credit,Freelance Client
+2025-12-04,Cult.fit Monthly Fitness Membership,1660.00,debit,Cult.fit
+2025-12-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2025-12-06,Apollo Pharmacy Medicines & Vitamins,415.00,debit,Apollo Pharmacy
+2025-12-06,BookMyShow IMAX Movie Tickets (2x),1020.00,debit,BookMyShow
+2025-12-06,Cred Credit Card Bill Payment Cashback,119.33,credit,CRED
+2025-12-07,Amazon Prime Video Channels Subscription,580.00,debit,Amazon
+2025-12-07,Local Mother Dairy Milk and Curd,175.00,debit,Mother Dairy
+2025-12-08,Dentist Consultation & Cleaning,1010.00,debit,Dental Care
+2025-12-09,Swiggy Online Food Order,441.00,debit,Swiggy
+2025-12-09,BookMyShow IMAX Movie Tickets (2x),570.00,debit,BookMyShow
+2025-12-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2025-12-10,Ola Cabs Airport Drop,1170.00,debit,Ola
+2025-12-12,BESCOM Bangalore Electricity Bill,1619.53,debit,BESCOM
+2025-12-12,Cult.fit Monthly Fitness Membership,2030.00,debit,Cult.fit
+2025-12-12,Dentist Consultation & Cleaning,1010.00,debit,Dental Care
+2025-12-13,BigBasket Monthly Grocery Basket,1550.00,debit,BigBasket
+2025-12-13,Subway 6-inch Sub & Drink,340.00,debit,Subway
+2025-12-13,MakeMyTrip Weekend Hotel Booking,5640.00,debit,MakeMyTrip
+2025-12-14,1mg Diagnostic Lab Blood Test,1230.00,debit,Tata 1mg
+2025-12-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2025-12-15,Swiggy Online Food Order,540.00,debit,Swiggy
+2025-12-15,Uber Auto / Cab Ride to Office,81.00,debit,Uber
+2025-12-15,Local Mother Dairy Milk and Curd,217.00,debit,Mother Dairy
+2025-12-16,1mg Diagnostic Lab Blood Test,1300.00,debit,Tata 1mg
+2025-12-17,Apollo Pharmacy Medicines & Vitamins,520.00,debit,Apollo Pharmacy
+2025-12-17,Rapido Bike Taxi Short Commute,77.00,debit,Rapido
+2025-12-17,Chaayos Chai and Bun Maska,200.00,debit,Chaayos
+2025-12-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2025-12-18,Chaayos Chai and Bun Maska,166.00,debit,Chaayos
+2025-12-18,Local Mother Dairy Milk and Curd,76.00,debit,Mother Dairy
+2025-12-18,Amazon Prime Video Channels Subscription,590.00,debit,Amazon
+2025-12-19,Blinkit Quick Commerce Delivery,930.00,debit,Blinkit
+2025-12-19,DMart Supermarket In-Store Purchase,1600.00,debit,DMart
+2025-12-19,1mg Diagnostic Lab Blood Test,1550.00,debit,Tata 1mg
+2025-12-20,Airtel Postpaid Family Plan Mobile Bill,906.97,debit,Airtel
+2025-12-20,Apollo Pharmacy Medicines & Vitamins,315.00,debit,Apollo Pharmacy
+2025-12-20,Apollo Pharmacy Medicines & Vitamins,399.00,debit,Apollo Pharmacy
+2025-12-20,Quarterly Stock Dividend Tata Motors,761.41,credit,CDSL Dividend
+2025-12-21,Myntra App Clothing Order,1340.00,debit,Myntra
+2025-12-21,Blinkit Quick Commerce Delivery,218.00,debit,Blinkit
+2025-12-21,DMart Supermarket In-Store Purchase,2810.00,debit,DMart
+2025-12-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2025-12-22,IndiGo Flight Ticket Bangalore-Delhi,5980.00,debit,IndiGo
+2025-12-22,Decathlon Sports Gear,1000.00,debit,Decathlon
+2025-12-22,Swiggy Online Food Order,680.00,debit,Swiggy
+2025-12-23,Uber Auto / Cab Ride to Office,123.00,debit,Uber
+2025-12-24,Namma Metro Smart Card Recharge,382.00,debit,Namma Metro
+2025-12-24,BookMyShow IMAX Movie Tickets (2x),850.00,debit,BookMyShow
+2025-12-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2025-12-25,1mg Diagnostic Lab Blood Test,650.00,debit,Tata 1mg
+2025-12-26,Dentist Consultation & Cleaning,1320.00,debit,Dental Care
+2025-12-27,1mg Diagnostic Lab Blood Test,1370.00,debit,Tata 1mg
+2025-12-27,Apollo Pharmacy Medicines & Vitamins,650.00,debit,Apollo Pharmacy
+2025-12-28,Myntra App Clothing Order,1540.00,debit,Myntra
+2025-12-30,Dentist Consultation & Cleaning,1430.00,debit,Dental Care
+2025-12-30,Cult.fit Monthly Fitness Membership,1800.00,debit,Cult.fit
+2025-12-30,BookMyShow IMAX Movie Tickets (2x),770.00,debit,BookMyShow
+2025-12-31,Cult.fit Monthly Fitness Membership,1820.00,debit,Cult.fit
+2025-12-31,Nykaa Personal Care & Grooming,1190.00,debit,Nykaa
+2026-01-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-01-01,Apollo Pharmacy Medicines & Vitamins,600.00,debit,Apollo Pharmacy
+2026-01-01,IndiGo Flight Ticket Bangalore-Delhi,4120.00,debit,IndiGo
+2026-01-02,IRCTC Train Ticket Reservation Tatkal,2020.00,debit,IRCTC
+2026-01-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-01-04,Starbucks Cold Brew & Sandwich,530.00,debit,Starbucks
+2026-01-04,Dentist Consultation & Cleaning,940.00,debit,Dental Care
+2026-01-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-01-05,Blinkit Quick Commerce Delivery,690.00,debit,Blinkit
+2026-01-05,Cred Credit Card Bill Payment Cashback,200.14,credit,CRED
+2026-01-06,Dentist Consultation & Cleaning,1130.00,debit,Dental Care
+2026-01-07,Starbucks Cold Brew & Sandwich,407.00,debit,Starbucks
+2026-01-07,Decathlon Sports Gear,2180.00,debit,Decathlon
+2026-01-07,Amazon Prime Video Channels Subscription,580.00,debit,Amazon
+2026-01-08,Dentist Consultation & Cleaning,1100.00,debit,Dental Care
+2026-01-08,Amazon Prime Video Channels Subscription,570.00,debit,Amazon
+2026-01-09,IRCTC Train Ticket Reservation Tatkal,2090.00,debit,IRCTC
+2026-01-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-01-10,Flipkart Big Billion Days Sale Item,1460.00,debit,Flipkart
+2026-01-10,Subway 6-inch Sub & Drink,291.00,debit,Subway
+2026-01-11,BookMyShow IMAX Movie Tickets (2x),620.00,debit,BookMyShow
+2026-01-12,BESCOM Bangalore Electricity Bill,1743.56,debit,BESCOM
+2026-01-12,Apollo Pharmacy Medicines & Vitamins,167.00,debit,Apollo Pharmacy
+2026-01-12,Myntra App Clothing Order,1840.00,debit,Myntra
+2026-01-13,Nykaa Personal Care & Grooming,1480.00,debit,Nykaa
+2026-01-14,Amazon Prime Video Channels Subscription,442.00,debit,Amazon
+2026-01-14,MakeMyTrip Weekend Hotel Booking,6340.00,debit,MakeMyTrip
+2026-01-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-01-15,Decathlon Sports Gear,1750.00,debit,Decathlon
+2026-01-15,Cult.fit Monthly Fitness Membership,2400.00,debit,Cult.fit
+2026-01-15,Flipkart Big Billion Days Sale Item,1450.00,debit,Flipkart
+2026-01-16,Dentist Consultation & Cleaning,1360.00,debit,Dental Care
+2026-01-17,Nature's Basket Organic Fruits & Cheese,1170.00,debit,Nature's Basket
+2026-01-17,Decathlon Sports Gear,1420.00,debit,Decathlon
+2026-01-17,Swiggy Online Food Order,550.00,debit,Swiggy
+2026-01-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-01-18,Chaayos Chai and Bun Maska,203.00,debit,Chaayos
+2026-01-18,DMart Supermarket In-Store Purchase,2810.00,debit,DMart
+2026-01-19,Myntra App Clothing Order,2450.00,debit,Myntra
+2026-01-20,Airtel Postpaid Family Plan Mobile Bill,975.83,debit,Airtel
+2026-01-20,Chaayos Chai and Bun Maska,169.00,debit,Chaayos
+2026-01-20,Third Wave Coffee Roasters,570.00,debit,Third Wave Coffee
+2026-01-20,Cred Credit Card Bill Payment Cashback,238.66,credit,CRED
+2026-01-21,Google Pay Scratch Card Reward,27.89,credit,Google Pay
+2026-01-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-01-22,McDonald's Meal Box,550.00,debit,McDonald's
+2026-01-23,Rapido Bike Taxi Short Commute,90.00,debit,Rapido
+2026-01-24,BigBasket Monthly Grocery Basket,1520.00,debit,BigBasket
+2026-01-24,Chaayos Chai and Bun Maska,247.00,debit,Chaayos
+2026-01-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-01-25,Apollo Pharmacy Medicines & Vitamins,175.00,debit,Apollo Pharmacy
+2026-01-26,Subway 6-inch Sub & Drink,379.00,debit,Subway
+2026-01-26,Dentist Consultation & Cleaning,1360.00,debit,Dental Care
+2026-01-27,Chaayos Chai and Bun Maska,237.00,debit,Chaayos
+2026-01-30,Myntra App Clothing Order,2030.00,debit,Myntra
+2026-01-31,Flipkart Big Billion Days Sale Item,3070.00,debit,Flipkart
+2026-01-31,1mg Diagnostic Lab Blood Test,1360.00,debit,Tata 1mg
+2026-02-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-02-01,Nykaa Personal Care & Grooming,1380.00,debit,Nykaa
+2026-02-01,Amazon Prime Video Channels Subscription,396.00,debit,Amazon
+2026-02-02,HPCL Petrol Pump Fuel Refill,990.00,debit,HPCL
+2026-02-02,Decathlon Sports Gear,1500.00,debit,Decathlon
+2026-02-02,Myntra App Clothing Order,760.00,debit,Myntra
+2026-02-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-02-04,MakeMyTrip Weekend Hotel Booking,6940.00,debit,MakeMyTrip
+2026-02-04,1mg Diagnostic Lab Blood Test,1290.00,debit,Tata 1mg
+2026-02-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-02-06,BookMyShow IMAX Movie Tickets (2x),1120.00,debit,BookMyShow
+2026-02-07,Swiggy Online Food Order,348.00,debit,Swiggy
+2026-02-07,Flipkart Big Billion Days Sale Item,1570.00,debit,Flipkart
+2026-02-08,Amazon Prime Video Channels Subscription,427.00,debit,Amazon
+2026-02-08,Dentist Consultation & Cleaning,1030.00,debit,Dental Care
+2026-02-09,IRCTC Train Ticket Reservation Tatkal,690.00,debit,IRCTC
+2026-02-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-02-11,Blinkit Quick Commerce Delivery,362.00,debit,Blinkit
+2026-02-11,Myntra App Clothing Order,2220.00,debit,Myntra
+2026-02-12,BESCOM Bangalore Electricity Bill,1785.42,debit,BESCOM
+2026-02-12,Ola Cabs Airport Drop,1130.00,debit,Ola
+2026-02-13,Uber Auto / Cab Ride to Office,363.00,debit,Uber
+2026-02-14,Freelance Consulting Honorarium,19856.10,credit,Freelance Client
+2026-02-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-02-15,Amazon India Online Purchase,3970.00,debit,Amazon
+2026-02-16,Myntra App Clothing Order,1090.00,debit,Myntra
+2026-02-16,Quarterly Stock Dividend Tata Motors,609.72,credit,CDSL Dividend
+2026-02-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-02-18,Apollo Pharmacy Medicines & Vitamins,231.00,debit,Apollo Pharmacy
+2026-02-19,Zomato Restaurant Delivery,299.00,debit,Zomato
+2026-02-19,Decathlon Sports Gear,1470.00,debit,Decathlon
+2026-02-19,BookMyShow IMAX Movie Tickets (2x),1200.00,debit,BookMyShow
+2026-02-20,Airtel Postpaid Family Plan Mobile Bill,886.28,debit,Airtel
+2026-02-20,Namma Metro Smart Card Recharge,292.00,debit,Namma Metro
+2026-02-20,BookMyShow IMAX Movie Tickets (2x),1050.00,debit,BookMyShow
+2026-02-20,Apollo Pharmacy Medicines & Vitamins,810.00,debit,Apollo Pharmacy
+2026-02-21,Apollo Pharmacy Medicines & Vitamins,235.00,debit,Apollo Pharmacy
+2026-02-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-02-22,Quarterly Stock Dividend Tata Motors,1415.12,credit,CDSL Dividend
+2026-02-23,Zomato Restaurant Delivery,413.00,debit,Zomato
+2026-02-24,Subway 6-inch Sub & Drink,282.00,debit,Subway
+2026-02-24,IRCTC Train Ticket Reservation Tatkal,1280.00,debit,IRCTC
+2026-02-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-02-25,Rapido Bike Taxi Short Commute,50.00,debit,Rapido
+2026-02-25,BigBasket Monthly Grocery Basket,2990.00,debit,BigBasket
+2026-02-26,Amazon India Online Purchase,2300.00,debit,Amazon
+2026-02-26,Namma Metro Smart Card Recharge,483.00,debit,Namma Metro
+2026-02-26,Cult.fit Monthly Fitness Membership,1990.00,debit,Cult.fit
+2026-02-28,Uber Auto / Cab Ride to Office,117.00,debit,Uber
+2026-03-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-03-01,Cult.fit Monthly Fitness Membership,2450.00,debit,Cult.fit
+2026-03-01,1mg Diagnostic Lab Blood Test,1310.00,debit,Tata 1mg
+2026-03-01,DMart Supermarket In-Store Purchase,3580.00,debit,DMart
+2026-03-02,Amazon Prime Video Channels Subscription,489.00,debit,Amazon
+2026-03-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-03-04,Apollo Pharmacy Medicines & Vitamins,750.00,debit,Apollo Pharmacy
+2026-03-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-03-05,Namma Metro Smart Card Recharge,444.00,debit,Namma Metro
+2026-03-05,BookMyShow IMAX Movie Tickets (2x),910.00,debit,BookMyShow
+2026-03-06,Decathlon Sports Gear,1880.00,debit,Decathlon
+2026-03-06,Reimbursement for Team Lunch,1366.06,credit,Corporate Reimbursement
+2026-03-08,Nykaa Personal Care & Grooming,1300.00,debit,Nykaa
+2026-03-08,BigBasket Monthly Grocery Basket,2850.00,debit,BigBasket
+2026-03-09,1mg Diagnostic Lab Blood Test,790.00,debit,Tata 1mg
+2026-03-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-03-10,Local Mother Dairy Milk and Curd,85.00,debit,Mother Dairy
+2026-03-10,BookMyShow IMAX Movie Tickets (2x),1000.00,debit,BookMyShow
+2026-03-11,Starbucks Cold Brew & Sandwich,760.00,debit,Starbucks
+2026-03-11,Apollo Pharmacy Medicines & Vitamins,484.00,debit,Apollo Pharmacy
+2026-03-11,1mg Diagnostic Lab Blood Test,1240.00,debit,Tata 1mg
+2026-03-12,BESCOM Bangalore Electricity Bill,1659.01,debit,BESCOM
+2026-03-12,Flipkart Big Billion Days Sale Item,2100.00,debit,Flipkart
+2026-03-12,DMart Supermarket In-Store Purchase,2260.00,debit,DMart
+2026-03-13,Zepto 10-Min Grocery Delivery,343.00,debit,Zepto
+2026-03-13,Myntra App Clothing Order,2660.00,debit,Myntra
+2026-03-14,MakeMyTrip Weekend Hotel Booking,6740.00,debit,MakeMyTrip
+2026-03-14,Cult.fit Monthly Fitness Membership,1990.00,debit,Cult.fit
+2026-03-14,DMart Supermarket In-Store Purchase,3650.00,debit,DMart
+2026-03-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-03-15,Amazon Prime Video Channels Subscription,436.00,debit,Amazon
+2026-03-15,IRCTC Train Ticket Reservation Tatkal,2360.00,debit,IRCTC
+2026-03-16,Amazon India Online Purchase,1670.00,debit,Amazon
+2026-03-17,Nykaa Personal Care & Grooming,1590.00,debit,Nykaa
+2026-03-17,Apollo Pharmacy Medicines & Vitamins,482.00,debit,Apollo Pharmacy
+2026-03-17,Zomato Restaurant Delivery,560.00,debit,Zomato
+2026-03-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-03-18,Amazon India Online Purchase,2530.00,debit,Amazon
+2026-03-18,Amazon India Online Purchase,3350.00,debit,Amazon
+2026-03-19,Zepto 10-Min Grocery Delivery,479.00,debit,Zepto
+2026-03-19,IndiGo Flight Ticket Bangalore-Delhi,5920.00,debit,IndiGo
+2026-03-20,Airtel Postpaid Family Plan Mobile Bill,877.60,debit,Airtel
+2026-03-21,Amazon Prime Video Channels Subscription,590.00,debit,Amazon
+2026-03-21,Dentist Consultation & Cleaning,1420.00,debit,Dental Care
+2026-03-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-03-22,BookMyShow IMAX Movie Tickets (2x),710.00,debit,BookMyShow
+2026-03-22,1mg Diagnostic Lab Blood Test,1800.00,debit,Tata 1mg
+2026-03-23,Third Wave Coffee Roasters,463.00,debit,Third Wave Coffee
+2026-03-24,1mg Diagnostic Lab Blood Test,1690.00,debit,Tata 1mg
+2026-03-24,Cred Credit Card Bill Payment Cashback,91.01,credit,CRED
+2026-03-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-03-25,Blinkit Quick Commerce Delivery,600.00,debit,Blinkit
+2026-03-26,Blinkit Quick Commerce Delivery,259.00,debit,Blinkit
+2026-03-26,Decathlon Sports Gear,1630.00,debit,Decathlon
+2026-03-27,DMart Supermarket In-Store Purchase,4050.00,debit,DMart
+2026-03-28,Myntra App Clothing Order,2120.00,debit,Myntra
+2026-03-28,Zepto 10-Min Grocery Delivery,459.00,debit,Zepto
+2026-03-29,1mg Diagnostic Lab Blood Test,1440.00,debit,Tata 1mg
+2026-03-29,Myntra App Clothing Order,1120.00,debit,Myntra
+2026-03-30,DMart Supermarket In-Store Purchase,3790.00,debit,DMart
+2026-03-31,Uber Auto / Cab Ride to Office,471.00,debit,Uber
+2026-03-31,1mg Diagnostic Lab Blood Test,970.00,debit,Tata 1mg
+2026-03-31,Cult.fit Monthly Fitness Membership,2280.00,debit,Cult.fit
+2026-04-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-04-01,1mg Diagnostic Lab Blood Test,1610.00,debit,Tata 1mg
+2026-04-01,IRCTC Train Ticket Reservation Tatkal,1630.00,debit,IRCTC
+2026-04-01,IRCTC Train Ticket Reservation Tatkal,1690.00,debit,IRCTC
+2026-04-02,Dentist Consultation & Cleaning,1280.00,debit,Dental Care
+2026-04-02,Local Mother Dairy Milk and Curd,76.00,debit,Mother Dairy
+2026-04-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-04-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-04-05,IndiGo Flight Ticket Bangalore-Delhi,6340.00,debit,IndiGo
+2026-04-07,Cult.fit Monthly Fitness Membership,2410.00,debit,Cult.fit
+2026-04-07,BigBasket Monthly Grocery Basket,3940.00,debit,BigBasket
+2026-04-07,Myntra App Clothing Order,2270.00,debit,Myntra
+2026-04-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-04-10,Dentist Consultation & Cleaning,1490.00,debit,Dental Care
+2026-04-10,Amazon Prime Video Channels Subscription,326.00,debit,Amazon
+2026-04-11,Starbucks Cold Brew & Sandwich,510.00,debit,Starbucks
+2026-04-12,BESCOM Bangalore Electricity Bill,1604.37,debit,BESCOM
+2026-04-12,Myntra App Clothing Order,930.00,debit,Myntra
+2026-04-14,BookMyShow IMAX Movie Tickets (2x),1080.00,debit,BookMyShow
+2026-04-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-04-15,1mg Diagnostic Lab Blood Test,1400.00,debit,Tata 1mg
+2026-04-16,Quarterly Stock Dividend Tata Motors,612.57,credit,CDSL Dividend
+2026-04-17,BookMyShow IMAX Movie Tickets (2x),850.00,debit,BookMyShow
+2026-04-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-04-18,Dentist Consultation & Cleaning,1090.00,debit,Dental Care
+2026-04-18,Dentist Consultation & Cleaning,910.00,debit,Dental Care
+2026-04-18,Amazon India Online Purchase,3810.00,debit,Amazon
+2026-04-19,Uber Auto / Cab Ride to Office,356.00,debit,Uber
+2026-04-19,DMart Supermarket In-Store Purchase,3280.00,debit,DMart
+2026-04-19,BigBasket Monthly Grocery Basket,1500.00,debit,BigBasket
+2026-04-20,Airtel Postpaid Family Plan Mobile Bill,949.81,debit,Airtel
+2026-04-20,1mg Diagnostic Lab Blood Test,720.00,debit,Tata 1mg
+2026-04-21,Amazon India Online Purchase,3100.00,debit,Amazon
+2026-04-21,Dentist Consultation & Cleaning,1220.00,debit,Dental Care
+2026-04-21,Swiggy Online Food Order,630.00,debit,Swiggy
+2026-04-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-04-24,Blinkit Quick Commerce Delivery,446.00,debit,Blinkit
+2026-04-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-04-25,Chaayos Chai and Bun Maska,309.00,debit,Chaayos
+2026-04-25,Blinkit Quick Commerce Delivery,610.00,debit,Blinkit
+2026-04-25,Zepto 10-Min Grocery Delivery,610.00,debit,Zepto
+2026-04-25,Cred Credit Card Bill Payment Cashback,105.60,credit,CRED
+2026-04-26,Amazon Prime Video Channels Subscription,304.00,debit,Amazon
+2026-04-26,Uber Auto / Cab Ride to Office,131.00,debit,Uber
+2026-04-27,Quarterly Stock Dividend Tata Motors,1539.22,credit,CDSL Dividend
+2026-04-28,Starbucks Cold Brew & Sandwich,570.00,debit,Starbucks
+2026-04-30,Amazon Prime Video Channels Subscription,436.00,debit,Amazon
+2026-04-30,Swiggy Online Food Order,750.00,debit,Swiggy
+2026-05-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-05-01,Starbucks Cold Brew & Sandwich,660.00,debit,Starbucks
+2026-05-02,Rapido Bike Taxi Short Commute,50.00,debit,Rapido
+2026-05-02,IndiGo Flight Ticket Bangalore-Delhi,5100.00,debit,IndiGo
+2026-05-02,Cult.fit Monthly Fitness Membership,1790.00,debit,Cult.fit
+2026-05-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-05-03,Apollo Pharmacy Medicines & Vitamins,740.00,debit,Apollo Pharmacy
+2026-05-03,Dentist Consultation & Cleaning,1300.00,debit,Dental Care
+2026-05-04,DMart Supermarket In-Store Purchase,2860.00,debit,DMart
+2026-05-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-05-05,Chaayos Chai and Bun Maska,214.00,debit,Chaayos
+2026-05-06,Local Mother Dairy Milk and Curd,208.00,debit,Mother Dairy
+2026-05-06,Cred Credit Card Bill Payment Cashback,45.98,credit,CRED
+2026-05-08,BookMyShow IMAX Movie Tickets (2x),1030.00,debit,BookMyShow
+2026-05-08,Cult.fit Monthly Fitness Membership,1830.00,debit,Cult.fit
+2026-05-09,1mg Diagnostic Lab Blood Test,1650.00,debit,Tata 1mg
+2026-05-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-05-10,Amazon Prime Video Channels Subscription,404.00,debit,Amazon
+2026-05-10,Cult.fit Monthly Fitness Membership,1710.00,debit,Cult.fit
+2026-05-10,1mg Diagnostic Lab Blood Test,910.00,debit,Tata 1mg
+2026-05-11,Ola Cabs Airport Drop,1080.00,debit,Ola
+2026-05-11,BookMyShow IMAX Movie Tickets (2x),1230.00,debit,BookMyShow
+2026-05-12,BESCOM Bangalore Electricity Bill,1552.73,debit,BESCOM
+2026-05-12,Cult.fit Monthly Fitness Membership,2170.00,debit,Cult.fit
+2026-05-12,BookMyShow IMAX Movie Tickets (2x),1050.00,debit,BookMyShow
+2026-05-12,Dentist Consultation & Cleaning,990.00,debit,Dental Care
+2026-05-13,IndiGo Flight Ticket Bangalore-Delhi,4990.00,debit,IndiGo
+2026-05-13,Blinkit Quick Commerce Delivery,620.00,debit,Blinkit
+2026-05-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-05-16,Nykaa Personal Care & Grooming,780.00,debit,Nykaa
+2026-05-17,Cult.fit Monthly Fitness Membership,1580.00,debit,Cult.fit
+2026-05-17,Zomato Restaurant Delivery,325.00,debit,Zomato
+2026-05-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-05-18,HPCL Petrol Pump Fuel Refill,1820.00,debit,HPCL
+2026-05-18,Decathlon Sports Gear,1200.00,debit,Decathlon
+2026-05-19,Chaayos Chai and Bun Maska,215.00,debit,Chaayos
+2026-05-19,HPCL Petrol Pump Fuel Refill,1550.00,debit,HPCL
+2026-05-20,Airtel Postpaid Family Plan Mobile Bill,903.27,debit,Airtel
+2026-05-20,BookMyShow IMAX Movie Tickets (2x),510.00,debit,BookMyShow
+2026-05-21,BigBasket Monthly Grocery Basket,2070.00,debit,BigBasket
+2026-05-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-05-22,Flipkart Big Billion Days Sale Item,950.00,debit,Flipkart
+2026-05-23,Cult.fit Monthly Fitness Membership,2310.00,debit,Cult.fit
+2026-05-23,Cred Credit Card Bill Payment Cashback,123.15,credit,CRED
+2026-05-24,Third Wave Coffee Roasters,360.00,debit,Third Wave Coffee
+2026-05-24,Decathlon Sports Gear,1130.00,debit,Decathlon
+2026-05-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-05-25,Amazon India Online Purchase,4360.00,debit,Amazon
+2026-05-26,Myntra App Clothing Order,880.00,debit,Myntra
+2026-05-26,Zomato Restaurant Delivery,510.00,debit,Zomato
+2026-05-26,Decathlon Sports Gear,540.00,debit,Decathlon
+2026-05-27,BigBasket Monthly Grocery Basket,3540.00,debit,BigBasket
+2026-05-27,McDonald's Meal Box,457.00,debit,McDonald's
+2026-05-29,Apollo Pharmacy Medicines & Vitamins,292.00,debit,Apollo Pharmacy
+2026-05-30,BookMyShow IMAX Movie Tickets (2x),1180.00,debit,BookMyShow
+2026-05-31,1mg Diagnostic Lab Blood Test,1180.00,debit,Tata 1mg
+2026-06-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-06-01,Dentist Consultation & Cleaning,1250.00,debit,Dental Care
+2026-06-02,1mg Diagnostic Lab Blood Test,820.00,debit,Tata 1mg
+2026-06-02,Quarterly Stock Dividend Tata Motors,1333.94,credit,CDSL Dividend
+2026-06-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-06-03,BookMyShow IMAX Movie Tickets (2x),820.00,debit,BookMyShow
+2026-06-03,Chaayos Chai and Bun Maska,222.00,debit,Chaayos
+2026-06-03,Freelance Consulting Honorarium,22138.84,credit,Freelance Client
+2026-06-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-06-05,Cult.fit Monthly Fitness Membership,2010.00,debit,Cult.fit
+2026-06-05,Decathlon Sports Gear,1400.00,debit,Decathlon
+2026-06-06,Decathlon Sports Gear,1570.00,debit,Decathlon
+2026-06-06,HPCL Petrol Pump Fuel Refill,1500.00,debit,HPCL
+2026-06-06,Starbucks Cold Brew & Sandwich,395.00,debit,Starbucks
+2026-06-07,Apollo Pharmacy Medicines & Vitamins,488.00,debit,Apollo Pharmacy
+2026-06-08,Nykaa Personal Care & Grooming,1010.00,debit,Nykaa
+2026-06-09,Namma Metro Smart Card Recharge,323.00,debit,Namma Metro
+2026-06-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-06-10,Dentist Consultation & Cleaning,1030.00,debit,Dental Care
+2026-06-11,Myntra App Clothing Order,1230.00,debit,Myntra
+2026-06-12,BESCOM Bangalore Electricity Bill,1720.29,debit,BESCOM
+2026-06-12,BookMyShow IMAX Movie Tickets (2x),800.00,debit,BookMyShow
+2026-06-12,Cult.fit Monthly Fitness Membership,1640.00,debit,Cult.fit
+2026-06-12,MakeMyTrip Weekend Hotel Booking,7350.00,debit,MakeMyTrip
+2026-06-13,Cult.fit Monthly Fitness Membership,2440.00,debit,Cult.fit
+2026-06-14,Rapido Bike Taxi Short Commute,95.00,debit,Rapido
+2026-06-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-06-15,Dentist Consultation & Cleaning,870.00,debit,Dental Care
+2026-06-15,1mg Diagnostic Lab Blood Test,1230.00,debit,Tata 1mg
+2026-06-15,Freelance Consulting Honorarium,11064.47,credit,Freelance Client
+2026-06-16,Flipkart Big Billion Days Sale Item,1290.00,debit,Flipkart
+2026-06-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-06-19,BookMyShow IMAX Movie Tickets (2x),1100.00,debit,BookMyShow
+2026-06-19,BookMyShow IMAX Movie Tickets (2x),1040.00,debit,BookMyShow
+2026-06-20,Airtel Postpaid Family Plan Mobile Bill,955.82,debit,Airtel
+2026-06-20,Dentist Consultation & Cleaning,1370.00,debit,Dental Care
+2026-06-21,Myntra App Clothing Order,2120.00,debit,Myntra
+2026-06-21,DMart Supermarket In-Store Purchase,3940.00,debit,DMart
+2026-06-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-06-22,Nature's Basket Organic Fruits & Cheese,770.00,debit,Nature's Basket
+2026-06-22,Flipkart Big Billion Days Sale Item,1790.00,debit,Flipkart
+2026-06-23,Myntra App Clothing Order,2330.00,debit,Myntra
+2026-06-23,Cult.fit Monthly Fitness Membership,1920.00,debit,Cult.fit
+2026-06-23,Blinkit Quick Commerce Delivery,800.00,debit,Blinkit
+2026-06-24,1mg Diagnostic Lab Blood Test,1660.00,debit,Tata 1mg
+2026-06-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-06-26,Ola Cabs Airport Drop,1080.00,debit,Ola
+2026-06-26,HPCL Petrol Pump Fuel Refill,2310.00,debit,HPCL
+2026-06-27,DMart Supermarket In-Store Purchase,5040.00,debit,DMart
+2026-06-27,Starbucks Cold Brew & Sandwich,373.00,debit,Starbucks
+2026-06-28,Chaayos Chai and Bun Maska,169.00,debit,Chaayos
+2026-06-30,Blinkit Quick Commerce Delivery,229.00,debit,Blinkit
+2026-07-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-07-01,Local Mother Dairy Milk and Curd,135.00,debit,Mother Dairy
+2026-07-02,Chaayos Chai and Bun Maska,167.00,debit,Chaayos
+2026-07-02,Nature's Basket Organic Fruits & Cheese,1720.00,debit,Nature's Basket
+2026-07-02,Cult.fit Monthly Fitness Membership,1920.00,debit,Cult.fit
+2026-07-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-07-03,Swiggy Online Food Order,316.00,debit,Swiggy
+2026-07-04,Swiggy Online Food Order,660.00,debit,Swiggy
+2026-07-04,Decathlon Sports Gear,1360.00,debit,Decathlon
+2026-07-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-07-05,Apollo Pharmacy Medicines & Vitamins,333.00,debit,Apollo Pharmacy
+2026-07-05,McDonald's Meal Box,379.00,debit,McDonald's
+2026-07-07,Ola Cabs Airport Drop,1220.00,debit,Ola
+2026-07-08,Cult.fit Monthly Fitness Membership,1520.00,debit,Cult.fit
+2026-07-08,Amazon India Online Purchase,2990.00,debit,Amazon
+2026-07-09,Chaayos Chai and Bun Maska,293.00,debit,Chaayos
+2026-07-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-07-10,Apollo Pharmacy Medicines & Vitamins,680.00,debit,Apollo Pharmacy
+2026-07-10,1mg Diagnostic Lab Blood Test,800.00,debit,Tata 1mg
+2026-07-11,Apollo Pharmacy Medicines & Vitamins,730.00,debit,Apollo Pharmacy
+2026-07-12,BESCOM Bangalore Electricity Bill,1604.85,debit,BESCOM
+2026-07-12,Flipkart Big Billion Days Sale Item,3340.00,debit,Flipkart
+2026-07-12,Subway 6-inch Sub & Drink,380.00,debit,Subway
+2026-07-12,Amazon India Online Purchase,1570.00,debit,Amazon
+2026-07-12,Google Pay Scratch Card Reward,76.43,credit,Google Pay
+2026-07-13,Namma Metro Smart Card Recharge,497.00,debit,Namma Metro
+2026-07-14,Apollo Pharmacy Medicines & Vitamins,329.00,debit,Apollo Pharmacy
+2026-07-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-07-16,Namma Metro Smart Card Recharge,467.00,debit,Namma Metro
+2026-07-17,Myntra App Clothing Order,2740.00,debit,Myntra
+2026-07-17,Nykaa Personal Care & Grooming,810.00,debit,Nykaa
+2026-07-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-07-18,Subway 6-inch Sub & Drink,316.00,debit,Subway
+2026-07-19,Nature's Basket Organic Fruits & Cheese,850.00,debit,Nature's Basket
+2026-07-19,Swiggy Online Food Order,367.00,debit,Swiggy
+2026-07-19,MakeMyTrip Weekend Hotel Booking,4900.00,debit,MakeMyTrip
+2026-07-20,Airtel Postpaid Family Plan Mobile Bill,962.55,debit,Airtel
+2026-07-21,1mg Diagnostic Lab Blood Test,1360.00,debit,Tata 1mg
+2026-07-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-07-22,Swiggy Online Food Order,560.00,debit,Swiggy
+2026-07-22,Myntra App Clothing Order,1780.00,debit,Myntra
+2026-07-23,Reimbursement for Team Lunch,1701.04,credit,Corporate Reimbursement
+2026-07-24,Zepto 10-Min Grocery Delivery,315.00,debit,Zepto
+2026-07-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-07-25,BookMyShow IMAX Movie Tickets (2x),1040.00,debit,BookMyShow
+2026-07-26,HPCL Petrol Pump Fuel Refill,2030.00,debit,HPCL
+2026-07-26,BookMyShow IMAX Movie Tickets (2x),980.00,debit,BookMyShow
+2026-07-26,Myntra App Clothing Order,2060.00,debit,Myntra
+2026-07-28,Decathlon Sports Gear,610.00,debit,Decathlon
+2026-07-29,Nature's Basket Organic Fruits & Cheese,840.00,debit,Nature's Basket
+2026-07-29,Flipkart Big Billion Days Sale Item,930.00,debit,Flipkart
+2026-07-30,1mg Diagnostic Lab Blood Test,1800.00,debit,Tata 1mg
+2026-07-31,IndiGo Flight Ticket Bangalore-Delhi,6210.00,debit,IndiGo
+2026-07-31,Cult.fit Monthly Fitness Membership,1790.00,debit,Cult.fit
+2026-07-31,Rapido Bike Taxi Short Commute,98.00,debit,Rapido
+2026-08-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-08-01,IRCTC Train Ticket Reservation Tatkal,690.00,debit,IRCTC
+2026-08-01,Blinkit Quick Commerce Delivery,378.00,debit,Blinkit
+2026-08-02,Amazon Prime Video Channels Subscription,439.00,debit,Amazon
+2026-08-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-08-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-08-05,Decathlon Sports Gear,1140.00,debit,Decathlon
+2026-08-05,Decathlon Sports Gear,530.00,debit,Decathlon
+2026-08-06,Nykaa Personal Care & Grooming,1200.00,debit,Nykaa
+2026-08-06,Rapido Bike Taxi Short Commute,111.00,debit,Rapido
+2026-08-07,Blinkit Quick Commerce Delivery,520.00,debit,Blinkit
+2026-08-07,Third Wave Coffee Roasters,300.00,debit,Third Wave Coffee
+2026-08-08,IRCTC Train Ticket Reservation Tatkal,1120.00,debit,IRCTC
+2026-08-09,Chaayos Chai and Bun Maska,163.00,debit,Chaayos
+2026-08-09,Amazon Prime Video Channels Subscription,337.00,debit,Amazon
+2026-08-09,Ola Cabs Airport Drop,900.00,debit,Ola
+2026-08-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-08-10,Blinkit Quick Commerce Delivery,690.00,debit,Blinkit
+2026-08-10,Dentist Consultation & Cleaning,1040.00,debit,Dental Care
+2026-08-10,BookMyShow IMAX Movie Tickets (2x),1240.00,debit,BookMyShow
+2026-08-10,Cred Credit Card Bill Payment Cashback,238.42,credit,CRED
+2026-08-11,IRCTC Train Ticket Reservation Tatkal,1950.00,debit,IRCTC
+2026-08-11,Decathlon Sports Gear,1550.00,debit,Decathlon
+2026-08-12,BESCOM Bangalore Electricity Bill,1763.17,debit,BESCOM
+2026-08-12,MakeMyTrip Weekend Hotel Booking,5070.00,debit,MakeMyTrip
+2026-08-12,1mg Diagnostic Lab Blood Test,990.00,debit,Tata 1mg
+2026-08-12,Cred Credit Card Bill Payment Cashback,60.57,credit,CRED
+2026-08-13,Flipkart Big Billion Days Sale Item,1690.00,debit,Flipkart
+2026-08-14,IndiGo Flight Ticket Bangalore-Delhi,7120.00,debit,IndiGo
+2026-08-14,BigBasket Monthly Grocery Basket,2740.00,debit,BigBasket
+2026-08-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-08-15,Chaayos Chai and Bun Maska,219.00,debit,Chaayos
+2026-08-17,Flipkart Big Billion Days Sale Item,3870.00,debit,Flipkart
+2026-08-17,BigBasket Monthly Grocery Basket,4000.00,debit,BigBasket
+2026-08-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-08-19,Nykaa Personal Care & Grooming,1450.00,debit,Nykaa
+2026-08-19,Amazon India Online Purchase,720.00,debit,Amazon
+2026-08-19,Decathlon Sports Gear,1220.00,debit,Decathlon
+2026-08-20,Airtel Postpaid Family Plan Mobile Bill,874.07,debit,Airtel
+2026-08-20,Swiggy Online Food Order,340.00,debit,Swiggy
+2026-08-21,1mg Diagnostic Lab Blood Test,980.00,debit,Tata 1mg
+2026-08-21,Third Wave Coffee Roasters,294.00,debit,Third Wave Coffee
+2026-08-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-08-22,Namma Metro Smart Card Recharge,310.00,debit,Namma Metro
+2026-08-23,BigBasket Monthly Grocery Basket,2860.00,debit,BigBasket
+2026-08-23,Starbucks Cold Brew & Sandwich,570.00,debit,Starbucks
+2026-08-24,Cult.fit Monthly Fitness Membership,2110.00,debit,Cult.fit
+2026-08-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-08-26,Amazon Prime Video Channels Subscription,530.00,debit,Amazon
+2026-08-26,Nature's Basket Organic Fruits & Cheese,1140.00,debit,Nature's Basket
+2026-08-26,BookMyShow IMAX Movie Tickets (2x),540.00,debit,BookMyShow
+2026-08-27,Decathlon Sports Gear,1220.00,debit,Decathlon
+2026-08-28,IndiGo Flight Ticket Bangalore-Delhi,4350.00,debit,IndiGo
+2026-08-29,IndiGo Flight Ticket Bangalore-Delhi,5520.00,debit,IndiGo
+2026-08-29,Cult.fit Monthly Fitness Membership,1990.00,debit,Cult.fit
+2026-08-30,Chaayos Chai and Bun Maska,193.00,debit,Chaayos
+2026-08-30,Starbucks Cold Brew & Sandwich,600.00,debit,Starbucks
+2026-08-31,Dentist Consultation & Cleaning,820.00,debit,Dental Care
+2026-08-31,Myntra App Clothing Order,2730.00,debit,Myntra
+2026-09-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-09-01,BookMyShow IMAX Movie Tickets (2x),1150.00,debit,BookMyShow
+2026-09-01,Amazon Prime Video Channels Subscription,350.00,debit,Amazon
+2026-09-02,Flipkart Big Billion Days Sale Item,3370.00,debit,Flipkart
+2026-09-02,Zepto 10-Min Grocery Delivery,550.00,debit,Zepto
+2026-09-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-09-04,Flipkart Big Billion Days Sale Item,1940.00,debit,Flipkart
+2026-09-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-09-05,Dentist Consultation & Cleaning,840.00,debit,Dental Care
+2026-09-05,Nature's Basket Organic Fruits & Cheese,730.00,debit,Nature's Basket
+2026-09-05,HPCL Petrol Pump Fuel Refill,1550.00,debit,HPCL
+2026-09-06,Amazon Prime Video Channels Subscription,463.00,debit,Amazon
+2026-09-07,Dentist Consultation & Cleaning,1360.00,debit,Dental Care
+2026-09-07,HPCL Petrol Pump Fuel Refill,880.00,debit,HPCL
+2026-09-08,BigBasket Monthly Grocery Basket,3510.00,debit,BigBasket
+2026-09-09,Myntra App Clothing Order,1710.00,debit,Myntra
+2026-09-09,Cult.fit Monthly Fitness Membership,1770.00,debit,Cult.fit
+2026-09-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-09-10,Nykaa Personal Care & Grooming,1370.00,debit,Nykaa
+2026-09-10,BigBasket Monthly Grocery Basket,1330.00,debit,BigBasket
+2026-09-12,BESCOM Bangalore Electricity Bill,1762.20,debit,BESCOM
+2026-09-12,1mg Diagnostic Lab Blood Test,900.00,debit,Tata 1mg
+2026-09-12,Amazon Prime Video Channels Subscription,580.00,debit,Amazon
+2026-09-13,Cult.fit Monthly Fitness Membership,2090.00,debit,Cult.fit
+2026-09-14,BookMyShow IMAX Movie Tickets (2x),1070.00,debit,BookMyShow
+2026-09-14,Swiggy Online Food Order,416.00,debit,Swiggy
+2026-09-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-09-17,Nykaa Personal Care & Grooming,950.00,debit,Nykaa
+2026-09-17,BigBasket Monthly Grocery Basket,2160.00,debit,BigBasket
+2026-09-17,Apollo Pharmacy Medicines & Vitamins,780.00,debit,Apollo Pharmacy
+2026-09-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-09-18,Cult.fit Monthly Fitness Membership,2220.00,debit,Cult.fit
+2026-09-19,DMart Supermarket In-Store Purchase,5030.00,debit,DMart
+2026-09-19,Zepto 10-Min Grocery Delivery,850.00,debit,Zepto
+2026-09-19,Nykaa Personal Care & Grooming,580.00,debit,Nykaa
+2026-09-20,Airtel Postpaid Family Plan Mobile Bill,979.09,debit,Airtel
+2026-09-20,Uber Auto / Cab Ride to Office,84.00,debit,Uber
+2026-09-20,Cult.fit Monthly Fitness Membership,1610.00,debit,Cult.fit
+2026-09-20,MakeMyTrip Weekend Hotel Booking,4940.00,debit,MakeMyTrip
+2026-09-21,Nature's Basket Organic Fruits & Cheese,1080.00,debit,Nature's Basket
+2026-09-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-09-23,Rapido Bike Taxi Short Commute,46.00,debit,Rapido
+2026-09-24,Apollo Pharmacy Medicines & Vitamins,248.00,debit,Apollo Pharmacy
+2026-09-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-09-25,Decathlon Sports Gear,990.00,debit,Decathlon
+2026-09-25,Amazon India Online Purchase,1120.00,debit,Amazon
+2026-09-26,Zepto 10-Min Grocery Delivery,333.00,debit,Zepto
+2026-09-27,MakeMyTrip Weekend Hotel Booking,5540.00,debit,MakeMyTrip
+2026-09-27,BookMyShow IMAX Movie Tickets (2x),740.00,debit,BookMyShow
+2026-09-28,Apollo Pharmacy Medicines & Vitamins,460.00,debit,Apollo Pharmacy
+2026-09-29,1mg Diagnostic Lab Blood Test,1440.00,debit,Tata 1mg
+2026-09-29,1mg Diagnostic Lab Blood Test,1070.00,debit,Tata 1mg
+2026-09-30,Flipkart Big Billion Days Sale Item,2090.00,debit,Flipkart
+2026-09-30,Amazon Prime Video Channels Subscription,424.00,debit,Amazon
+2026-09-30,Amazon Prime Video Channels Subscription,530.00,debit,Amazon
+2026-10-01,Monthly Salary Credited - Infosys BPM,95000.00,credit,Infosys
+2026-10-01,Local Mother Dairy Milk and Curd,181.00,debit,Mother Dairy
+2026-10-01,McDonald's Meal Box,405.00,debit,McDonald's
+2026-10-03,House Rent Payment to Landlord (UPI),22000.00,debit,Rent
+2026-10-04,Cult.fit Monthly Fitness Membership,1650.00,debit,Cult.fit
+2026-10-04,HPCL Petrol Pump Fuel Refill,730.00,debit,HPCL
+2026-10-05,HDFC Bank Loan EMI Auto-Debit,18500.00,debit,HDFC Bank
+2026-10-05,McDonald's Meal Box,405.00,debit,McDonald's
+2026-10-05,Google Pay Scratch Card Reward,48.49,credit,Google Pay
+2026-10-06,McDonald's Meal Box,409.00,debit,McDonald's
+2026-10-07,Myntra App Clothing Order,2410.00,debit,Myntra
+2026-10-07,Apollo Pharmacy Medicines & Vitamins,540.00,debit,Apollo Pharmacy
+2026-10-07,Freelance Consulting Honorarium,19906.54,credit,Freelance Client
+2026-10-08,Swiggy Online Food Order,740.00,debit,Swiggy
+2026-10-09,Blinkit Quick Commerce Delivery,770.00,debit,Blinkit
+2026-10-10,Zerodha Coin Index Fund SIP Auto-Debit,10000.00,debit,Zerodha
+2026-10-10,Myntra App Clothing Order,2780.00,debit,Myntra
+2026-10-10,Nykaa Personal Care & Grooming,1440.00,debit,Nykaa
+2026-10-11,Dentist Consultation & Cleaning,1410.00,debit,Dental Care
+2026-10-12,BESCOM Bangalore Electricity Bill,1637.06,debit,BESCOM
+2026-10-12,Zomato Restaurant Delivery,890.00,debit,Zomato
+2026-10-12,Decathlon Sports Gear,630.00,debit,Decathlon
+2026-10-13,Chaayos Chai and Bun Maska,222.00,debit,Chaayos
+2026-10-13,Dentist Consultation & Cleaning,1100.00,debit,Dental Care
+2026-10-14,Myntra App Clothing Order,1020.00,debit,Myntra
+2026-10-15,Groww Flexi-Cap Mutual Fund SIP Auto-Debit,5000.00,debit,Groww
+2026-10-15,Swiggy Online Food Order,640.00,debit,Swiggy
+2026-10-15,Decathlon Sports Gear,1780.00,debit,Decathlon
+2026-10-17,Starbucks Cold Brew & Sandwich,610.00,debit,Starbucks
+2026-10-18,Jio Fiber Broadband 300Mbps Plan,1179.00,debit,Jio
+2026-10-19,Nature's Basket Organic Fruits & Cheese,740.00,debit,Nature's Basket
+2026-10-20,Airtel Postpaid Family Plan Mobile Bill,896.69,debit,Airtel
+2026-10-21,Dentist Consultation & Cleaning,1020.00,debit,Dental Care
+2026-10-22,Netflix Premium 4K Monthly Subscription,649.00,debit,Netflix
+2026-10-22,IRCTC Train Ticket Reservation Tatkal,1040.00,debit,IRCTC
+2026-10-22,Local Mother Dairy Milk and Curd,143.00,debit,Mother Dairy
+2026-10-23,Cult.fit Monthly Fitness Membership,2380.00,debit,Cult.fit
+2026-10-24,Decathlon Sports Gear,1290.00,debit,Decathlon
+2026-10-24,Namma Metro Smart Card Recharge,436.00,debit,Namma Metro
+2026-10-25,Spotify Individual Premium Subscription,119.00,debit,Spotify
+2026-10-25,BigBasket Monthly Grocery Basket,2330.00,debit,BigBasket
+2026-10-25,Amazon Prime Video Channels Subscription,371.00,debit,Amazon
+2026-10-26,DMart Supermarket In-Store Purchase,5160.00,debit,DMart
+2026-10-26,Amazon Prime Video Channels Subscription,590.00,debit,Amazon
+2026-10-28,Apollo Pharmacy Medicines & Vitamins,790.00,debit,Apollo Pharmacy
+2026-10-31,BookMyShow IMAX Movie Tickets (2x),1290.00,debit,BookMyShow
+2026-10-31,Nature's Basket Organic Fruits & Cheese,1430.00,debit,Nature's Basket

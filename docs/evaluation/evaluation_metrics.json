@@ -1,0 +1,343 @@
+{
+  "modelVersion": "v1.0.0",
+  "evaluationTimestamp": "2026-10-18T10:19:25.585047+00:00",
+  "totalTestSamples": 717,
+  "overall": {
+    "accuracy": 1.0,
+    "macroF1": 1.0,
+    "weightedF1": 1.0
+  },
+  "classes": [
+    "Bills & Utilities",
+    "EMI/Loans",
+    "Education",
+    "Entertainment",
+    "Food",
+    "Groceries",
+    "Health",
+    "Income",
+    "Investments/SIP",
+    "Other",
+    "Rent",
+    "Shopping",
+    "Transport",
+    "Travel"
+  ],
+  "perClass": {
+    "Bills & Utilities": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 52
+    },
+    "EMI/Loans": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 51
+    },
+    "Education": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 51
+    },
+    "Entertainment": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 51
+    },
+    "Food": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 52
+    },
+    "Groceries": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 50
+    },
+    "Health": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 51
+    },
+    "Income": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 50
+    },
+    "Investments/SIP": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 51
+    },
+    "Other": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 52
+    },
+    "Rent": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 51
+    },
+    "Shopping": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 52
+    },
+    "Transport": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 52
+    },
+    "Travel": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1Score": 1.0,
+      "support": 51
+    }
+  },
+  "confusionMatrix": [
+    [
+      52,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      51,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      51,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      51,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      52,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      50,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      51,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      50,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      51,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      52,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      51,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      52,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      52,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      51
+    ]
+  ],
+  "confidenceAnalysis": {
+    "meanConfidence": 0.931,
+    "medianConfidence": 0.9428,
+    "minConfidence": 0.3713
+  }
+}

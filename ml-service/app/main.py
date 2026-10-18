@@ -1,10 +1,34 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.middleware import CorrelationAndLoggingMiddleware
-from app.routers import health, internal
+from app.routers import (
+    anomalies,
+    categorize,
+    forecast,
+    goals,
+    health,
+    internal,
+    rag,
+    recommendations,
+    recurring,
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        from app.services.rag_service import rag_service
+        rag_service.ensure_ingested_on_startup()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("RAG startup ingestion skipped/failed: %s", e)
+    yield
+
 
 app = FastAPI(
     title="MoneyLens ML & Intelligence Service",
@@ -12,6 +36,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs" if settings.environment != "production" else None,
     redoc_url=None,
+    lifespan=lifespan,
 )
 
 # Correlation ID and structured logging middleware
@@ -89,7 +114,20 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         headers={"X-Request-Id": request_id},
     )
 
-
 # Routers
 app.include_router(health.router)
 app.include_router(internal.router)
+app.include_router(categorize.router)
+app.include_router(categorize.router, prefix="/api/v1")
+app.include_router(forecast.router)
+app.include_router(forecast.router, prefix="/api/v1")
+app.include_router(goals.router)
+app.include_router(goals.router, prefix="/api/v1")
+app.include_router(anomalies.router)
+app.include_router(anomalies.router, prefix="/api/v1")
+app.include_router(recurring.router)
+app.include_router(recurring.router, prefix="/api/v1")
+app.include_router(recommendations.router)
+app.include_router(recommendations.router, prefix="/api/v1")
+app.include_router(rag.router)
+app.include_router(rag.router, prefix="/api/v1")

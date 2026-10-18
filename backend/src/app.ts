@@ -1,11 +1,15 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { env } from './config/env.js';
 import { requestIdMiddleware } from './middlewares/requestId.js';
 import { requestLoggerMiddleware } from './middlewares/requestLogger.js';
 import { errorHandlerMiddleware } from './middlewares/errorHandler.js';
+import { csrfMiddleware } from './middlewares/csrf.js';
+import { generalLimiter } from './middlewares/rateLimiter.js';
 import { apiV1Router } from './routes/index.js';
+import { healthRouter } from './routes/health.routes.js';
 import { NotFoundError } from './utils/errors.js';
 
 export const createApp = (): Express => {
@@ -16,19 +20,31 @@ export const createApp = (): Express => {
     app.set('trust proxy', 1);
   }
 
-  // 2. Request Correlation ID
+  // 2. Request Correlation ID (before everything else for traceability)
   app.use(requestIdMiddleware);
 
   // 3. Structured Request Logging
   app.use(requestLoggerMiddleware);
 
-  // 4. CORS configuration (Strict origins + Credentials for httpOnly cookies)
+  // 4. Security hardening headers via helmet
+  app.use(helmet());
+
+  // 5. General rate limiter (skip in test environment so test suites don't hit limits)
+  if (env.NODE_ENV !== 'test') {
+    app.use(generalLimiter);
+  }
+
+  // 6. CORS configuration — STRICT: no wildcard allowed, credentials required
   const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, or server-to-server)
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        // Allow requests with no origin (curl, server-to-server, Supertest in tests)
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        if (allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
           callback(new Error(`Origin ${origin} not allowed by CORS`));
@@ -36,25 +52,36 @@ export const createApp = (): Express => {
       },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-CSRF-Token'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Request-Id',
+        'X-Requested-With',
+      ],
       exposedHeaders: ['X-Request-Id'],
     }),
   );
 
-  // 5. Parsers
+  // 7. Parsers (body size limited to 1mb to prevent payload-based DoS)
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 
-  // 6. API v1 Routes
+  // 8. CSRF protection for state-changing methods
+  app.use(csrfMiddleware);
+
+  // 9. Health & Readiness Probes (direct container orchestrator / probe support)
+  app.use('/', healthRouter);
+
+  // 10. API v1 Routes
   app.use('/api/v1', apiV1Router);
 
-  // 7. Catch-all 404 Route Handler
+  // 10. Catch-all 404 Route Handler
   app.use((_req: Request, _res: Response, next: NextFunction) => {
     next(new NotFoundError('The requested resource was not found on this server'));
   });
 
-  // 8. Central Error Handling Middleware
+  // 11. Central Error Handling Middleware
   app.use(errorHandlerMiddleware);
 
   return app;

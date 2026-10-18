@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
+import { dbHealth } from '../src/routes/health.routes.js';
 
 describe('Backend Health & Core Middleware Tests', () => {
   const app = createApp();
@@ -13,6 +14,52 @@ describe('Backend Health & Core Middleware Tests', () => {
     expect(requestId).toBeDefined();
     expect(typeof requestId).toBe('string');
     expect((requestId as string).length).toBeGreaterThan(0);
+  });
+
+  it('GET /health (root liveness) should return 200 with status ok', async () => {
+    const res = await request(app).get('/health');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
+  });
+
+  it('GET /health/ready should return 200 when MongoDB is connected without leaking internals', async () => {
+    const res = await request(app).get('/health/ready');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      status: 'ok',
+      checks: {
+        database: 'connected',
+      },
+    });
+    // Ensure no internals leaked
+    expect(res.body).not.toHaveProperty('uri');
+    expect(res.body).not.toHaveProperty('host');
+    expect(res.body).not.toHaveProperty('database');
+  });
+
+  it('GET /api/v1/health/ready should also return 200 when MongoDB is connected', async () => {
+    const res = await request(app).get('/api/v1/health/ready');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.checks.database).toBe('connected');
+  });
+
+  it('should return 503 when database is disconnected', async () => {
+    const readyStateSpy = jest.spyOn(dbHealth, 'isReady').mockReturnValue(false);
+
+    const res = await request(app).get('/health/ready');
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({
+      status: 'unavailable',
+      checks: {
+        database: 'disconnected',
+      },
+    });
+
+    readyStateSpy.mockRestore();
   });
 
   it('should propagate incoming X-Request-Id header', async () => {

@@ -5,6 +5,7 @@ export type ErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'CONFLICT'
+  | 'TOO_MANY_REQUESTS'
   | 'INTERNAL_SERVER_ERROR'
   | 'SERVICE_UNAVAILABLE';
 
@@ -56,5 +57,11 @@ export class NotFoundError extends AppError {
 export class ServiceUnavailableError extends AppError {
   constructor(message = 'Service temporarily unavailable') {
     super(message, 503, 'SERVICE_UNAVAILABLE');
+  }
+}
+
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Too many requests, please try again later') {
+    super(message, 429, 'TOO_MANY_REQUESTS');
   }
 }

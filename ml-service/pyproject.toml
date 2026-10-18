@@ -9,15 +9,24 @@ dependencies = [
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
     "httpx>=0.28.0",
+    "scikit-learn>=1.9.1",
+    "joblib>=1.6.0",
+    "numpy>=2.4.6",
+    "pandas>=3.0.6",
+    "matplotlib>=3.11.2",
+    "chromadb>=1.5.9",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.17.1",
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W", "UP"]
-ignore = []
+select = ["E", "F", "W"]
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

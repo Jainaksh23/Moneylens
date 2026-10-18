@@ -21,7 +21,21 @@ export const errorHandlerMiddleware = (
 ): void => {
   const requestId = req.requestId || 'unknown';
 
-  // 1. Handled Domain AppError
+  // 1. CORS error check
+  if (err.message && err.message.includes('not allowed by CORS')) {
+    const errorBody: StandardErrorResponse = {
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Origin not allowed by CORS policy',
+      },
+      requestId,
+    };
+    logger.warn({ origin: req.header('Origin'), requestId }, 'CORS request rejected');
+    res.status(403).json(errorBody);
+    return;
+  }
+
+  // 2. Handled Domain AppError
   if (err instanceof AppError) {
     const errorBody: StandardErrorResponse = {
       error: {
@@ -75,6 +89,89 @@ export const errorHandlerMiddleware = (
     };
 
     res.status(400).json(errorBody);
+    return;
+  }
+
+  // 4. Express Body Parser Payload Too Large (413)
+  if (
+    (err as any).type === 'entity.too.large' ||
+    (err as any).status === 413 ||
+    (err as any).statusCode === 413
+  ) {
+    const errorBody: StandardErrorResponse = {
+      error: {
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'Request payload exceeds maximum allowed size limit',
+      },
+      requestId,
+    };
+    logger.warn({ requestId }, 'Request payload size limit exceeded (413)');
+    res.status(413).json(errorBody);
+    return;
+  }
+
+  // 5. Multer File Upload Size Limit (LIMIT_FILE_SIZE)
+  if ((err as any).code === 'LIMIT_FILE_SIZE') {
+    const errorBody: StandardErrorResponse = {
+      error: {
+        code: 'BAD_REQUEST',
+        message: 'File upload exceeds maximum allowed size (5MB limit)',
+      },
+      requestId,
+    };
+    logger.warn({ requestId }, 'Multer file upload size limit exceeded (400)');
+    res.status(400).json(errorBody);
+    return;
+  }
+
+  // 4. Mongoose CastError / BSONError (invalid ObjectId or type casting)
+  if (err.name === 'CastError' || err.name === 'BSONError') {
+    const path = (err as any).path ? ` for ${(err as any).path}` : '';
+    const errorBody: StandardErrorResponse = {
+      error: {
+        code: 'BAD_REQUEST',
+        message: `Invalid identifier or parameter format${path}`,
+      },
+      requestId,
+    };
+
+    logger.warn({ err: err.message, requestId }, 'Mongoose cast error encountered');
+    res.status(400).json(errorBody);
+    return;
+  }
+
+  // 5. Mongoose Document Validation Error
+  if (err.name === 'ValidationError' && (err as any).errors) {
+    const details = Object.values((err as any).errors).map((e: any) => ({
+      field: e.path,
+      message: e.message,
+    }));
+    const errorBody: StandardErrorResponse = {
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Database document validation failed',
+        details,
+      },
+      requestId,
+    };
+
+    logger.warn({ details, requestId }, 'Mongoose validation error encountered');
+    res.status(422).json(errorBody);
+    return;
+  }
+
+  // 6. MongoDB Duplicate Key Conflict (E11000)
+  if ((err as any).code === 11000) {
+    const errorBody: StandardErrorResponse = {
+      error: {
+        code: 'CONFLICT',
+        message: 'A record with duplicate unique fields already exists',
+      },
+      requestId,
+    };
+
+    logger.warn({ requestId }, 'Duplicate key conflict encountered');
+    res.status(409).json(errorBody);
     return;
   }
 

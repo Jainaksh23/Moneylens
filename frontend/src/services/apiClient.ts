@@ -32,18 +32,46 @@ export class ApiClientError extends Error {
   }
 }
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  preferences: {
+    currency: string;
+    dateFormat: string;
+  };
+  createdAt: string;
+}
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
 
+// Session expiration listener registry
+type SessionExpiredHandler = () => void;
+const sessionExpiredHandlers: SessionExpiredHandler[] = [];
+
+export const onSessionExpired = (handler: SessionExpiredHandler): (() => void) => {
+  sessionExpiredHandlers.push(handler);
+  return () => {
+    const idx = sessionExpiredHandlers.indexOf(handler);
+    if (idx !== -1) sessionExpiredHandlers.splice(idx, 1);
+  };
+};
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  const url = endpoint.startsWith('http')
+    ? endpoint
+    : `${API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
   const headers = new Headers(options.headers || {});
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
-  // Include credentials by default for httpOnly cookies
+  // Required custom header for CSRF defense-in-depth on state-changing requests
+  headers.set('X-Requested-With', 'moneylens');
+
+  // Include credentials by default for httpOnly cookies (NO localStorage auth tokens)
   const config: RequestInit = {
     ...options,
     credentials: 'include',
@@ -66,6 +94,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const requestId = response.headers.get('x-request-id') || undefined;
 
   if (!response.ok) {
+    // Notify session expired handler if 401 on non-login/register routes
+    if (
+      response.status === 401 &&
+      !endpoint.includes('/auth/login') &&
+      !endpoint.includes('/auth/register')
+    ) {
+      sessionExpiredHandlers.forEach((handler) => handler());
+    }
+
     let errorData: ApiErrorResponse | null = null;
     try {
       errorData = await response.json();

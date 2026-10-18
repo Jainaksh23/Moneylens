@@ -1,47 +1,141 @@
 services:
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-    environment:
-      - NODE_ENV=development
-      - PORT=5000
-      - MONGODB_URI=${MONGODB_URI}
-      - JWT_SECRET=${JWT_SECRET}
-      - COOKIE_NAME=${COOKIE_NAME:-moneylens_token}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173}
-      - ML_SERVICE_URL=http://ml-service:8000
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
-    depends_on:
-      - ml-service
+  # ==========================================
+  # 1. MongoDB Database
+  # ==========================================
+  mongo:
+    image: mongo:7.0
+    container_name: moneylens-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - moneylens-network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.runCommand(\"ping\").ok' --quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
+  # ==========================================
+  # 2. Mongo Express (Database GUI - Dev Profile Only)
+  # ==========================================
+  mongo-express:
+    image: mongo-express:1.0.2-alpine
+    container_name: moneylens-mongo-express
+    profiles:
+      - dev
+    restart: unless-stopped
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin123}
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - moneylens-network
+
+  # ==========================================
+  # 3. ML & RAG Intelligence Service (FastAPI)
+  # ==========================================
   ml-service:
     build:
       context: ./ml-service
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    container_name: moneylens-ml-service
+    restart: unless-stopped
     environment:
-      - ML_PORT=8000
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
-      - CHROMA_PERSIST_DIR=/app/chroma_data
+      ML_PORT: 8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      CHROMA_PERSIST_DIR: /app/chroma_data
     volumes:
       - chroma_data:/app/chroma_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - moneylens-network
 
+  # ==========================================
+  # 4. API Backend Service (Node.js/Express)
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: moneylens-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 5000
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/moneylens}
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_NAME: ${COOKIE_NAME:-moneylens_token}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      ML_SERVICE_URL: http://ml-service:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - moneylens-network
+
+  # ==========================================
+  # 5. Frontend Client Service (Vite React + Nginx SPA/Proxy)
+  # ==========================================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+    container_name: moneylens-frontend
+    restart: unless-stopped
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:5000/api/v1
+      - "${FRONTEND_PORT:-5173}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - moneylens-network
 
+# ==========================================
+# Named Volumes for State Persistence
+# ==========================================
 volumes:
+  mongo_data:
+    driver: local
   chroma_data:
+    driver: local
+
+# ==========================================
+# Isolated Internal Network
+# ==========================================
+networks:
+  moneylens-network:
+    driver: bridge

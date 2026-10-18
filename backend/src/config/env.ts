@@ -23,14 +23,32 @@ const envSchema = z.object({
     .string()
     .min(16, 'JWT_SECRET must be at least 16 characters')
     .default('moneylens-development-jwt-secret-minimum-32-chars-long'),
+  JWT_EXPIRY: z.string().default('7d'),
   COOKIE_NAME: z.string().default('moneylens_token'),
-  ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
+  ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
   ML_SERVICE_URL: z.string().url().default('http://localhost:8000'),
   INTERNAL_API_KEY: z
     .string()
     .min(16, 'INTERNAL_API_KEY must be at least 16 characters')
     .default('moneylens-internal-secret-key-32-chars-dev'),
-});
+  GEMINI_API_KEY: z.string().optional(),
+  GROQ_API_KEY: z.string().optional(),
+  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+}).refine(
+  (data) => {
+    if (data.NODE_ENV === 'production') {
+      return (
+        data.JWT_SECRET !== 'moneylens-development-jwt-secret-minimum-32-chars-long' &&
+        data.INTERNAL_API_KEY !== 'moneylens-internal-secret-key-32-chars-dev'
+      );
+    }
+    return true;
+  },
+  {
+    message:
+      'In production mode (NODE_ENV=production), JWT_SECRET and INTERNAL_API_KEY must be set to custom production secrets and cannot use default development keys.',
+  },
+);
 
 const parseEnv = () => {
   const result = envSchema.safeParse(process.env);

@@ -1,0 +1,68 @@
+# ==============================================================================
+# MoneyLens Render Infrastructure Blueprint (render.yaml)
+# ==============================================================================
+# Deploy with Render Blueprints: https://dashboard.render.com/blueprints
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. MoneyLens ML Intelligence & Analytics Service (FastAPI)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: moneylens-ml-service
+    runtime: docker
+    dockerfilePath: ./ml-service/Dockerfile
+    dockerContext: ./ml-service
+    plan: free
+    region: oregon
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: ML_PORT
+        value: 8000
+      - key: INTERNAL_API_KEY
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false # User supplies from console.groq.com
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: CHROMA_PERSIST_DIR
+        value: /app/chroma_data
+
+  # ----------------------------------------------------------------------------
+  # 2. MoneyLens Core Backend API Gateway (Node.js 20 Express)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: moneylens-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false # User supplies MongoDB Atlas M0 SRV connection string
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_NAME
+        value: moneylens_token
+      - key: ALLOWED_ORIGINS
+        sync: false # Set to your Vercel URL e.g. https://moneylens.vercel.app
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: moneylens-ml-service
+          property: host
+      - key: INTERNAL_API_KEY
+        fromService:
+          type: web
+          name: moneylens-ml-service
+          envVarKey: INTERNAL_API_KEY
+      - key: ML_TIMEOUT_MS
+        value: "15000"

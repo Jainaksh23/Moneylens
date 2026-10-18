@@ -1,13 +1,20 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   ReceiptText,
+  UploadCloud,
   TrendingUp,
   Target,
   BotMessageSquare,
   Sparkles,
+  LogIn,
+  AlertOctagon,
+  Lightbulb,
+  Compass,
+  Settings,
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavItem {
   name: string;
@@ -19,12 +26,19 @@ interface NavItem {
 const navigation: NavItem[] = [
   { name: 'Dashboard', to: '/', icon: LayoutDashboard },
   { name: 'Transactions', to: '/transactions', icon: ReceiptText },
+  { name: 'Import CSV', to: '/import', icon: UploadCloud },
   { name: 'Cash-Flow Forecast', to: '/forecast', icon: TrendingUp },
   { name: 'Goals & SIP Simulator', to: '/goals', icon: Target },
+  { name: 'Anomalies', to: '/anomalies', icon: AlertOctagon },
+  { name: 'Recommendations', to: '/recommendations', icon: Lightbulb },
   { name: 'AI Finance Assistant', to: '/chat', icon: BotMessageSquare, badge: 'RAG' },
+  { name: 'System Tour', to: '/onboarding', icon: Compass },
+  { name: 'Settings', to: '/settings', icon: Settings },
 ];
 
 export const Sidebar: React.FC = () => {
+  const { user, isAuthenticated } = useAuth();
+
   return (
     <aside className="w-64 border-r border-gray-800 bg-[#0e131d]/60 p-4 flex flex-col justify-between hidden md:flex">
       <div className="space-y-6">
@@ -32,7 +46,7 @@ export const Sidebar: React.FC = () => {
           <p className="px-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
             Navigation
           </p>
-          <nav className="mt-3 space-y-1">
+          <nav className="mt-3 space-y-1" aria-label="Main Navigation">
             {navigation.map((item) => (
               <NavLink
                 key={item.name}
@@ -71,16 +85,37 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
+      {/* User profile bottom bar */}
       <div className="border-t border-gray-800 pt-4">
-        <div className="flex items-center space-x-3 px-2">
-          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 border border-emerald-500/30">
-            IN
-          </div>
-          <div className="text-xs">
-            <p className="font-medium text-gray-200">Demo User</p>
-            <p className="text-gray-500">demo@moneylens.in</p>
-          </div>
-        </div>
+        {isAuthenticated && user ? (
+          <Link
+            to="/settings"
+            title="Open account settings"
+            className="flex items-center space-x-3 px-2 py-1.5 rounded-xl hover:bg-gray-800/50 transition-colors group"
+          >
+            <div className="h-9 w-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-bold text-emerald-300 border border-emerald-500/30 group-hover:border-emerald-400 transition-colors">
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="text-xs truncate flex-1">
+              <p className="font-semibold text-gray-200 truncate group-hover:text-white">{user.name}</p>
+              <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+              <span className="inline-block text-[10px] text-emerald-400/80 font-mono">
+                {user.preferences?.currency || 'INR'} • {user.preferences?.dateFormat || 'DD/MM/YYYY'}
+              </span>
+            </div>
+          </Link>
+        ) : (
+          <Link
+            to="/login"
+            className="flex items-center space-x-3 px-3 py-2 rounded-lg bg-gray-900/50 border border-gray-800 hover:bg-gray-800/60 text-xs text-gray-300 transition-colors"
+          >
+            <LogIn className="h-4 w-4 text-emerald-400" />
+            <div>
+              <p className="font-medium text-white">Sign In</p>
+              <p className="text-[10px] text-gray-400">Access your saved portfolio</p>
+            </div>
+          </Link>
+        )}
       </div>
     </aside>
   );
