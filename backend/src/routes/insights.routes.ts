@@ -70,7 +70,7 @@ insightsRouter.post(
  * Feedback status update on an insight (open, expected, incorrect, dismissed).
  */
 insightsRouter.patch(
-  '/:id',
+  ['/:id', '/anomalies/:id'],
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;

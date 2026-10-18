@@ -37,7 +37,10 @@ router.post(
 
       const result = await chatService.processUserMessage(userId, parsed.message);
       res.status(200).json({
-        data: result,
+        data: {
+          ...result,
+          response: result.answer,
+        },
       });
     } catch (err) {
       next(err);

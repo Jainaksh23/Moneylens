@@ -113,7 +113,7 @@ async function runE2E() {
     });
     if (!txListRes.ok) throw new Error(`Fetch transactions failed (${txListRes.status})`);
     const txListData = await txListRes.json();
-    const targetTx = txListData.transactions[0];
+    const targetTx = (txListData.items || txListData.transactions || [])[0];
     if (!targetTx) throw new Error('No transactions returned to recategorize');
 
     const updateRes = await fetch(`${baseUrl}/transactions/${targetTx.id}`, {
@@ -157,11 +157,14 @@ async function runE2E() {
     });
     if (!forecastRes.ok) throw new Error(`Forecast request failed (${forecastRes.status})`);
     const forecastData = await forecastRes.json();
-    const predictions = forecastData.forecast || forecastData.predictions || [];
+    const predictions =
+      forecastData.forecast?.values || forecastData.forecast || forecastData.predictions || [];
     if (!Array.isArray(predictions) || predictions.length === 0) {
       throw new Error(`Expected forecast predictions array, got: ${JSON.stringify(forecastData)}`);
     }
-    console.log(green('PASS') + ` (Horizon: 3 Months, Model: ${forecastData.modelUsed || 'Rolling Mean Baseline'})`);
+    const modelUsed =
+      forecastData.forecast?.modelUsed || forecastData.modelUsed || 'Rolling Mean Baseline';
+    console.log(green('PASS') + ` (Horizon: 3 Months, Model: ${modelUsed})`);
 
     // --------------------------------------------------------------------------
     // Step 6: Create Goal + What-If Simulation
@@ -258,7 +261,8 @@ async function runE2E() {
     });
     if (!chatRes.ok) throw new Error(`Chat request failed (${chatRes.status}): ${await chatRes.text()}`);
     const chatData = await chatRes.json();
-    const responseText = chatData.data?.response || chatData.response || '';
+    const responseText =
+      chatData.data?.response || chatData.data?.answer || chatData.response || chatData.answer || '';
     if (!responseText) throw new Error('Chat response was empty');
     console.log(green('PASS') + ` (Answered with educational guidance [${responseText.substring(0, 40)}...])`);
 

@@ -33,7 +33,8 @@ let targetUrl = process.env.TARGET_URL || process.argv[2];
 async function checkUrl(url) {
   try {
     const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(3000) });
-    return res.ok;
+    const isJson = (res.headers.get('content-type') || '').includes('json');
+    return res.ok && isJson;
   } catch {
     return false;
   }
