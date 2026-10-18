@@ -38,11 +38,14 @@ const upload = multer({
       file.mimetype === 'text/plain' ||
       file.mimetype === 'application/vnd.ms-excel' ||
       file.originalname.toLowerCase().endsWith('.csv');
+    const isPdf =
+      file.mimetype === 'application/pdf' ||
+      file.originalname.toLowerCase().endsWith('.pdf');
 
-    if (isCsv) {
+    if (isCsv || isPdf) {
       cb(null, true);
     } else {
-      cb(new BadRequestError('Only CSV files (.csv) are permitted for transaction imports'));
+      cb(new BadRequestError('Only CSV files (.csv) and PDF statements (.pdf) are permitted for transaction imports'));
     }
   },
 });
@@ -434,7 +437,7 @@ transactionRouter.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
-        throw new BadRequestError('No CSV file uploaded. Please attach a CSV file under field "file".');
+        throw new BadRequestError('No statement file uploaded. Please attach a CSV or PDF file under field "file".');
       }
 
       const result = await importService.processPreview(

@@ -2,6 +2,7 @@ import { env } from '../config/env';
 import { logger } from '../utils/logger';
 import { ruleBasedCategorize } from '../utils/categorizer';
 import { CategorySource } from '../models/Transaction';
+import { AppError, BadRequestError, ValidationError, ErrorCode } from '../utils/errors';
 
 export interface CategorizationInput {
   id: string;
@@ -193,3 +194,73 @@ export async function batchCategorizeTransactions(
 
   return results;
 }
+
+export interface ParsedPdfTransaction {
+  row: number;
+  date: string;
+  description: string;
+  merchant?: string;
+  amount: number;
+  direction: 'income' | 'expense';
+  type: string;
+  category?: string;
+  categoryConfidence?: number | null;
+  needsReview?: boolean;
+  modelVersion?: string | null;
+  categorySource?: 'model' | 'rules' | 'user' | 'unknown';
+  raw?: string;
+}
+
+export interface ParsedPdfError {
+  row: number;
+  message: string;
+  raw?: string;
+}
+
+export interface ParsePdfResult {
+  success: boolean;
+  statementType: string;
+  totalExtracted: number;
+  validRows: number;
+  errorRows: number;
+  transactions: ParsedPdfTransaction[];
+  errors: ParsedPdfError[];
+}
+
+/**
+ * Sends a PDF statement buffer to the FastAPI ML service for text extraction via pdfplumber.
+ */
+export async function parsePdfStatementWithMl(
+  fileBuffer: Buffer,
+  filename: string,
+): Promise<ParsePdfResult> {
+  const endpoint = `${env.ML_SERVICE_URL}/parse/pdf-statement`;
+  const blob = new Blob([fileBuffer], { type: 'application/pdf' });
+  const formData = new FormData();
+  formData.append('file', blob, filename);
+
+  const res = await fetchWithRetry(endpoint, {
+    method: 'POST',
+    headers: {
+      'X-Internal-Key': env.INTERNAL_API_KEY,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errorBody = (await res.json().catch(() => ({}))) as Record<string, any>;
+    const message =
+      errorBody?.error?.message || errorBody?.detail || 'Failed to parse PDF statement';
+    if (res.status === 422) {
+      throw new ValidationError(message, errorBody?.error?.details);
+    }
+    if (res.status === 400) {
+      throw new BadRequestError(message, errorBody?.error?.details);
+    }
+    const code = (errorBody?.error?.code || 'INTERNAL_SERVER_ERROR') as ErrorCode;
+    throw new AppError(message, res.status, code, errorBody?.error?.details);
+  }
+
+  return (await res.json()) as ParsePdfResult;
+}
+

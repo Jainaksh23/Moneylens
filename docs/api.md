@@ -203,34 +203,41 @@ This document provides complete documentation for the MoneyLens REST API (`/api/
 ```
 
 ### `POST /api/v1/transactions/import`
-- **Description**: Uploads CSV file (multipart/form-data under key `file`), sanitizes records, performs duplicate fingerprinting, and runs ML categorization preview.
+- **Description**: Uploads CSV (`.csv`) or digital PDF (`.pdf`) statement file (multipart/form-data under key `file`). For PDFs, forwards file buffer to `ml-service` (`/parse/pdf-statement`) for `pdfplumber` text extraction and tabular parsing into canonical schema (`date`, `description`, `amount`, `direction`, `merchant`, `category`). Sanitizes records, performs duplicate fingerprinting, and returns row-level preview.
+- **Supported PDF Statement Types (Tested Synthetic Samples)**:
+  - Standard Bank Account Statement (`docs/sample_bank_statement.pdf`): tabular format with columns Date, Narration/Description, Chq/Ref No, Withdrawal, Deposit, Balance.
+  - Standard Credit Card Statement (`docs/sample_credit_card_statement.pdf`): tabular format with columns Date, Description, Amount, CR/DR indicator.
+- **Unsupported / Scanned PDFs**: Returns `422 Unprocessable Content` with message `"Scanned or image-only PDF detected. Text extraction requires a digital text PDF statement (OCR is not supported in v1)."`
 - **Response `200 OK`**:
 ```json
 {
   "importJobId": "6734a3f1c3d4e5f6a7b8c9d2",
-  "filename": "sample_transactions.csv",
+  "filename": "sample_bank_statement.pdf",
   "counts": {
-    "accepted": 670,
-    "rejected": 1,
+    "accepted": 15,
+    "rejected": 0,
     "duplicates": 0,
-    "totalRows": 671
+    "totalRows": 15
   },
   "errors": [],
   "sampleAccepted": [
     {
-      "date": "2025-11-01",
-      "description": "Monthly Salary Credited - Infosys BPM",
-      "amount": 95000,
+      "date": "2026-03-01",
+      "description": "Salary Credit - TechCorp India",
+      "amount": 75000,
       "direction": "income",
+      "merchant": "Techcorp India",
       "category": "Income",
-      "confidence": 0.98
+      "source": "pdf",
+      "isDuplicate": false
     }
-  ]
+  ],
+  "sampleDuplicates": []
 }
 ```
 
 ### `POST /api/v1/transactions/import/confirm`
-- **Description**: Persists staged transactions from an import preview into the database.
+- **Description**: Persists staged transactions from an import preview into the database, preserving provenance (`source: "csv" | "pdf"`).
 - **Request Body**:
 ```json
 {
@@ -242,7 +249,7 @@ This document provides complete documentation for the MoneyLens REST API (`/api/
 ```json
 {
   "message": "Transactions successfully imported",
-  "importedCount": 670,
+  "importedCount": 15,
   "importJobId": "6734a3f1c3d4e5f6a7b8c9d2"
 }
 ```
@@ -451,3 +458,43 @@ This document provides complete documentation for the MoneyLens REST API (`/api/
 
 ### `DELETE /api/v1/chat/history`
 - **Description**: Purges all conversational message history for the current user.
+
+---
+
+## 11. ML Service Internal Endpoints (`ml-service`)
+
+Protected by `X-Internal-Key` header for service-to-service communication.
+
+### `POST /parse/pdf-statement`
+- **Description**: Parses a digital bank or credit card statement PDF using `pdfplumber` text extraction, maps columns into the MoneyLens canonical transaction schema (`date`, `description`, `amount`, `direction`, `merchant`), and categorizes rows using the ML Categorizer pipeline.
+- **Headers**: `X-Internal-Key: <INTERNAL_API_KEY>`
+- **Request**: Multipart form data with key `file` (PDF file).
+- **Security & Extraction Guarantees**:
+  - Rejects non-PDF file formats with `400 Bad Request`.
+  - Rejects password-protected/encrypted PDFs with `422 Unprocessable Content`.
+  - Rejects scanned / image-only PDFs (`len(extracted_text) < 20`) with clear `422 Unprocessable Content`: `"Scanned or image-only PDF detected. Text extraction requires a digital text PDF statement (OCR is not supported in v1)."`
+- **Response `200 OK`**:
+```json
+{
+  "success": true,
+  "statementType": "bank_statement",
+  "totalExtracted": 15,
+  "validRows": 15,
+  "errorRows": 0,
+  "transactions": [
+    {
+      "date": "2026-03-01",
+      "description": "Salary Credit - TechCorp India",
+      "merchant": "Techcorp India",
+      "amount": 75000,
+      "direction": "income",
+      "type": "credit",
+      "category": "Income",
+      "categoryConfidence": 0.95,
+      "needsReview": false,
+      "modelVersion": "tfidf-lr-v1.0"
+    }
+  ],
+  "errors": []
+}
+```

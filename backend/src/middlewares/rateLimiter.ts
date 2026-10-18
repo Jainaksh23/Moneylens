@@ -64,6 +64,7 @@ export const strictLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',
@@ -81,6 +82,7 @@ export const resetAuthLimiters = (): void => {
     try {
       loginLimiter.resetKey(k);
       registerLimiter.resetKey(k);
+      strictLimiter.resetKey(k);
     } catch {
       // Ignore if key was not present
     }

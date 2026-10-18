@@ -114,7 +114,7 @@ bash scripts/smoke_test.sh
 cd backend
 npm test
 ```
-*Validates 9 test suites (121 tests): Authentication, Profile / CAS Export & Purge, Transactions & Deduplication, Analytics Aggregations, Cash-Flow Forecast & Goals, Anomaly Insights & Reminders, RAG Financial Chat & Grounded Security, and Health Readiness probes.*
+*Validates 9 test suites (123 tests): Authentication, Profile / CAS Export & Purge, Transactions & Deduplication, Statement Import (CSV & digital PDF via ml-service), Analytics Aggregations, Cash-Flow Forecast & Goals, Anomaly Insights & Reminders, RAG Financial Chat & Grounded Security, and Health Readiness probes.*
 
 ### 3. Frontend Test Suite (Vitest)
 ```bash
@@ -128,7 +128,7 @@ npm test
 cd ml-service
 pytest -v
 ```
-*Validates 9 test suites (77 tests): Health & model readiness probes, internal key authentication, transaction categorization, time-series forecasting, goal feasibility scoring, anomaly detection, and RAG vector store retrieval.*
+*Validates 10 test modules (82 tests): Health & model readiness probes, internal key authentication, transaction categorization, PDF statement table extraction & parsing (`pdfplumber`), time-series forecasting, goal feasibility scoring, anomaly detection, and RAG vector store retrieval.*
 
 ### 5. Run Full End-to-End Verification Flow
 ```bash

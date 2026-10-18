@@ -13,6 +13,7 @@ from app.routers import (
     goals,
     health,
     internal,
+    pdf_import,
     rag,
     recommendations,
     recurring,
@@ -131,3 +132,5 @@ app.include_router(recommendations.router)
 app.include_router(recommendations.router, prefix="/api/v1")
 app.include_router(rag.router)
 app.include_router(rag.router, prefix="/api/v1")
+app.include_router(pdf_import.router)
+app.include_router(pdf_import.router, prefix="/api/v1")

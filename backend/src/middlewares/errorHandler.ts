@@ -175,6 +175,27 @@ export const errorHandlerMiddleware = (
     return;
   }
 
+  // 7. Generic HTTP error with statusCode / status
+  const customStatus = (err as any).statusCode || (err as any).status;
+  if (typeof customStatus === 'number' && customStatus >= 400 && customStatus < 600) {
+    const code = (err as any).code || (customStatus === 422 ? 'VALIDATION_ERROR' : customStatus === 400 ? 'BAD_REQUEST' : 'INTERNAL_SERVER_ERROR');
+    const errorBody: StandardErrorResponse = {
+      error: {
+        code,
+        message: err.message,
+        ...((err as any).details ? { details: (err as any).details } : {}),
+      },
+      requestId,
+    };
+    if (customStatus >= 500) {
+      logger.error({ err, requestId }, `Handled server error [${code}]: ${err.message}`);
+    } else {
+      logger.warn({ err, requestId }, `Client application error [${code}]: ${err.message}`);
+    }
+    res.status(customStatus).json(errorBody);
+    return;
+  }
+
   // 4. Uncaught / Internal Unexpected Error
   logger.error(
     {

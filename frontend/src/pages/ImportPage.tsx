@@ -11,7 +11,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { transactionService } from '../services/transactionService';
-import type { CsvPreviewResponse } from '../services/transactionService';
+import type { StatementPreviewResponse } from '../services/transactionService';
 
 export const ImportPage: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -19,7 +19,7 @@ export const ImportPage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [previewData, setPreviewData] = useState<CsvPreviewResponse | null>(null);
+  const [previewData, setPreviewData] = useState<StatementPreviewResponse | null>(null);
 
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -29,8 +29,9 @@ export const ImportPage: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (!file.name.toLowerCase().endsWith('.csv')) {
-        setUploadError('Only CSV files (.csv) are supported');
+      const lower = file.name.toLowerCase();
+      if (!lower.endsWith('.csv') && !lower.endsWith('.pdf')) {
+        setUploadError('Only CSV files (.csv) and digital PDF statements (.pdf) are supported');
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
@@ -50,7 +51,7 @@ export const ImportPage: React.FC = () => {
     setIsUploading(true);
     setUploadError(null);
     try {
-      const preview = await transactionService.uploadCsvPreview(selectedFile);
+      const preview = await transactionService.uploadStatementPreview(selectedFile);
       setPreviewData(preview);
       if (preview.counts.accepted > 0) {
         setActiveTab('accepted');
@@ -60,7 +61,7 @@ export const ImportPage: React.FC = () => {
         setActiveTab('rejected');
       }
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Failed to parse and preview CSV');
+      setUploadError(err instanceof Error ? err.message : 'Failed to parse and preview statement');
     } finally {
       setIsUploading(false);
     }
@@ -94,10 +95,10 @@ export const ImportPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center space-x-2">
             <FileSpreadsheet className="h-6 w-6 text-emerald-400" />
-            <span>Import Bank Statement CSV</span>
+            <span>Import Statement (CSV & PDF)</span>
           </h1>
           <p className="mt-1 text-xs text-gray-400">
-            Upload your Indian bank or UPI statement. Two-step preview validates rows and flags duplicate transactions.
+            Upload your bank or credit card statement in CSV or digital PDF format. Two-step preview validates rows and flags duplicate transactions.
           </p>
         </div>
 
@@ -152,7 +153,7 @@ export const ImportPage: React.FC = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv,text/csv"
+                accept=".csv,.pdf,text/csv,application/pdf"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -161,21 +162,35 @@ export const ImportPage: React.FC = () => {
               </div>
               <p className="text-sm font-medium text-gray-200">
                 {selectedFile ? (
-                  <span className="text-emerald-400 font-semibold">{selectedFile.name}</span>
+                  <span className="inline-flex items-center space-x-2">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tracking-wide ${
+                        selectedFile.name.toLowerCase().endsWith('.pdf')
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}
+                    >
+                      {selectedFile.name.toLowerCase().endsWith('.pdf') ? 'PDF Statement' : 'CSV File'}
+                    </span>
+                    <span className="text-emerald-400 font-semibold">{selectedFile.name}</span>
+                  </span>
                 ) : (
-                  'Click to choose a CSV file or drag and drop here'
+                  'Click to choose a CSV or digital PDF statement or drag and drop here'
                 )}
               </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Standard format: date, description, amount, type (debit/credit), merchant • Max 5MB
+              <p className="mt-1 text-xs text-gray-400">
+                Supports bank account & credit card statements • Max 5MB • Digital text statements only (OCR is not supported in v1)
               </p>
             </div>
 
             {/* Error Banner */}
             {uploadError && (
-              <div className="flex items-center space-x-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs text-rose-300">
-                <XCircle className="h-4 w-4 flex-shrink-0 text-rose-400" />
-                <span>{uploadError}</span>
+              <div className="flex items-start space-x-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-xs text-rose-300">
+                <XCircle className="h-4 w-4 flex-shrink-0 text-rose-400 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-semibold block text-rose-200">Statement Processing Error</span>
+                  <p className="leading-relaxed">{uploadError}</p>
+                </div>
               </div>
             )}
 
@@ -199,7 +214,7 @@ export const ImportPage: React.FC = () => {
                   {isUploading ? (
                     <>
                       <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      <span>Parsing & Validating...</span>
+                      <span>Parsing & Validating Statement...</span>
                     </>
                   ) : (
                     <>
@@ -301,6 +316,7 @@ export const ImportPage: React.FC = () => {
                     <table className="w-full text-left text-xs text-gray-300">
                       <thead className="bg-gray-900/60 text-gray-400 uppercase text-[10px]">
                         <tr>
+                          <th className="px-3 py-2">Source</th>
                           <th className="px-3 py-2">Date</th>
                           <th className="px-3 py-2">Description</th>
                           <th className="px-3 py-2">Merchant</th>
@@ -311,6 +327,17 @@ export const ImportPage: React.FC = () => {
                       <tbody className="divide-y divide-gray-800/60 font-mono">
                         {previewData.sampleAccepted.map((row, idx) => (
                           <tr key={idx} className="hover:bg-gray-900/40">
+                            <td className="px-3 py-2 font-sans">
+                              <span
+                                className={`inline-flex rounded uppercase px-1.5 py-0.5 text-[9px] font-bold tracking-wider ${
+                                  row.source === 'pdf'
+                                    ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                                    : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                                }`}
+                              >
+                                {row.source || 'csv'}
+                              </span>
+                            </td>
                             <td className="px-3 py-2 font-sans">{new Date(row.date).toLocaleDateString('en-IN')}</td>
                             <td className="px-3 py-2 font-sans truncate max-w-xs">{row.description}</td>
                             <td className="px-3 py-2 font-sans capitalize">{row.merchant}</td>

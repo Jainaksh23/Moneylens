@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { env } from '../src/config/env.js';
+import * as mlClient from '../src/services/mlClient.js';
 
 describe('Phase 3: Transactions Domain, CSV Import & Analytics Tests', () => {
   const app = createApp();
@@ -368,6 +369,97 @@ describe('Phase 3: Transactions Domain, CSV Import & Analytics Tests', () => {
 
       expect(listRes.body.total).toBe(1);
       expect(listRes.body.items[0].source).toBe('csv');
+    });
+
+    it('should preview PDF statement with parsed transactions and confirm import with source="pdf"', async () => {
+      const mockPdfResult: mlClient.ParsePdfResult = {
+        success: true,
+        statementType: 'bank_account_statement',
+        totalExtracted: 2,
+        validRows: 2,
+        errorRows: 0,
+        transactions: [
+          {
+            row: 2,
+            date: '2026-10-04',
+            description: 'Apex Synthetic Salary Credit',
+            merchant: 'Apex Bank',
+            amount: 75000,
+            direction: 'income',
+            type: 'income',
+            category: 'Income',
+            categorySource: 'model',
+            categoryConfidence: 0.98,
+            needsReview: false,
+            modelVersion: '1.0.0',
+            raw: '04-10-2026 | Salary Credit | 75000.00',
+          },
+        ],
+        errors: [],
+      };
+
+      const spy = jest
+        .spyOn(mlClient, 'parsePdfStatementWithMl')
+        .mockResolvedValueOnce(mockPdfResult);
+
+      // Step 1: Preview PDF
+      const previewRes = await request(app)
+        .post('/api/v1/transactions/import')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie])
+        .attach('file', Buffer.from('%PDF-1.4 dummy binary', 'utf-8'), 'statement.pdf');
+
+      expect(previewRes.status).toBe(200);
+      expect(previewRes.body.counts.accepted).toBe(1);
+      expect(previewRes.body.counts.rejected).toBe(0);
+      expect(previewRes.body.sampleAccepted[0].source).toBe('pdf');
+
+      const importJobId = previewRes.body.importJobId;
+
+      // Step 2: Confirm PDF import
+      const confirmRes = await request(app)
+        .post('/api/v1/transactions/import/confirm')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie])
+        .send({ importJobId, includeDuplicates: false });
+
+      expect(confirmRes.status).toBe(200);
+      expect(confirmRes.body.importedCount).toBe(1);
+
+      // Verify transaction list shows source: 'pdf'
+      const listRes = await request(app)
+        .get('/api/v1/transactions?q=Apex')
+        .set('Cookie', [userACookie]);
+
+      expect(listRes.body.total).toBe(1);
+      expect(listRes.body.items[0].source).toBe('pdf');
+      expect(listRes.body.items[0].amount).toBe(75000);
+
+      spy.mockRestore();
+    });
+
+    it('should return clear 422 error when scanned / image-only PDF is uploaded', async () => {
+      const err = new Error(
+        'Scanned or image-only PDF detected. Text extraction requires a digital text PDF statement (OCR is not supported in v1).',
+      ) as any;
+      err.statusCode = 422;
+      err.code = 'VALIDATION_ERROR';
+
+      const spy = jest
+        .spyOn(mlClient, 'parsePdfStatementWithMl')
+        .mockRejectedValueOnce(err);
+
+      const res = await request(app)
+        .post('/api/v1/transactions/import')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie])
+        .attach('file', Buffer.from('%PDF-1.4 scanned', 'utf-8'), 'scanned.pdf');
+
+      expect(res.status).toBe(422);
+      expect(res.body.error.message).toContain('Scanned or image-only PDF detected');
+      expect(res.body.error.message).toContain('OCR is not supported in v1');
+
+      spy.mockRestore();
     });
   });
 

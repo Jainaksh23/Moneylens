@@ -13,7 +13,7 @@ export interface TransactionItem {
   categoryConfidence?: number | null;
   modelVersion?: string | null;
   needsReview?: boolean;
-  source: 'manual' | 'csv';
+  source: 'manual' | 'csv' | 'pdf';
   isDuplicate: boolean;
   createdAt: string;
 }
@@ -77,7 +77,7 @@ export interface ImportErrorItem {
   raw?: string;
 }
 
-export interface CsvPreviewResponse {
+export interface StatementPreviewResponse {
   importJobId: string;
   filename: string;
   counts: {
@@ -90,6 +90,8 @@ export interface CsvPreviewResponse {
   sampleAccepted: ImportCandidatePreview[];
   sampleDuplicates: ImportCandidatePreview[];
 }
+
+export type CsvPreviewResponse = StatementPreviewResponse;
 
 export const transactionService = {
   getTransactions: async (
@@ -119,7 +121,7 @@ export const transactionService = {
 
   updateTransaction: async (
     id: string,
-    payload: UpdateTransactionPayload,
+  payload: UpdateTransactionPayload,
   ): Promise<{ transaction: TransactionItem }> => {
     return apiClient.patch<{ transaction: TransactionItem }>(`/transactions/${id}`, payload);
   },
@@ -128,7 +130,7 @@ export const transactionService = {
     return apiClient.delete<{ message: string }>(`/transactions/${id}`);
   },
 
-  uploadCsvPreview: async (file: File): Promise<CsvPreviewResponse> => {
+  uploadStatementPreview: async (file: File): Promise<StatementPreviewResponse> => {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -151,10 +153,14 @@ export const transactionService = {
       } catch {
         // Fallback
       }
-      throw new Error(errJson?.error?.message || response.statusText || 'CSV Upload failed');
+      throw new Error(errJson?.error?.message || response.statusText || 'Statement upload failed');
     }
 
     return response.json();
+  },
+
+  uploadCsvPreview: async (file: File): Promise<StatementPreviewResponse> => {
+    return transactionService.uploadStatementPreview(file);
   },
 
   confirmImport: async (

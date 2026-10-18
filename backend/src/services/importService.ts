@@ -9,7 +9,7 @@ import { ruleBasedCategorize } from '../utils/categorizer.js';
 import { ImportJob, ImportErrorItem, ImportCandidate } from '../models/ImportJob.js';
 import { Transaction } from '../models/Transaction.js';
 import { BadRequestError, NotFoundError } from '../utils/errors.js';
-import { batchCategorizeTransactions } from './mlClient.js';
+import { batchCategorizeTransactions, parsePdfStatementWithMl } from './mlClient.js';
 import mongoose from 'mongoose';
 
 export interface CsvPreviewResult {
@@ -28,7 +28,7 @@ export interface CsvPreviewResult {
 
 export const importService = {
   /**
-   * Step 1: Parses CSV buffer, validates row by row, detects duplicates,
+   * Step 1: Parses CSV or PDF statement buffer, validates row by row, detects duplicates,
    * stages candidates in ImportJob, and returns preview statistics.
    */
   processPreview: async (
@@ -36,6 +36,10 @@ export const importService = {
     filename: string,
     fileBuffer: Buffer,
   ): Promise<CsvPreviewResult> => {
+    if (filename.toLowerCase().endsWith('.pdf')) {
+      return await importService.processPdfPreview(userId, filename, fileBuffer);
+    }
+
     let records: Record<string, string>[];
     try {
       records = parse(fileBuffer, {
@@ -210,6 +214,140 @@ export const importService = {
   },
 
   /**
+   * Parses digital PDF statement buffer via ML service pdfplumber endpoint,
+   * validates row by row, detects duplicates, stages candidates in ImportJob, and returns preview statistics.
+   */
+  processPdfPreview: async (
+    userId: string,
+    filename: string,
+    fileBuffer: Buffer,
+  ): Promise<CsvPreviewResult> => {
+    const pdfResult = await parsePdfStatementWithMl(fileBuffer, filename);
+
+    const errors: ImportErrorItem[] = (pdfResult.errors || []).map((e) => ({
+      row: e.row,
+      message: e.message,
+      raw: e.raw || '',
+    }));
+
+    const candidates: ImportCandidate[] = [];
+    const seenFingerprintsInFile = new Set<string>();
+
+    for (let i = 0; i < (pdfResult.transactions || []).length; i++) {
+      const tx = pdfResult.transactions[i]!;
+      let parsedDate: Date;
+      try {
+        parsedDate = parseKolkataDate(tx.date);
+      } catch {
+        errors.push({
+          row: tx.row || i + 1,
+          message: 'Invalid transaction date',
+          raw: tx.raw || JSON.stringify(tx),
+        });
+        continue;
+      }
+
+      if (!tx.description || tx.description.trim().length === 0) {
+        errors.push({
+          row: tx.row || i + 1,
+          message: 'Missing transaction description',
+          raw: tx.raw || JSON.stringify(tx),
+        });
+        continue;
+      }
+
+      if (!tx.amount || tx.amount <= 0 || isNaN(tx.amount)) {
+        errors.push({
+          row: tx.row || i + 1,
+          message: 'Invalid transaction amount',
+          raw: tx.raw || JSON.stringify(tx),
+        });
+        continue;
+      }
+
+      const merchant = normalizeMerchant(tx.merchant || tx.description);
+      const category = tx.category || 'unknown';
+      const categorySource =
+        (tx.categorySource as any) || (category !== 'unknown' ? 'model' : 'unknown');
+
+      const fingerprint = computeFingerprint(userId, parsedDate, tx.amount, merchant);
+
+      let isDuplicate = false;
+      if (seenFingerprintsInFile.has(fingerprint)) {
+        isDuplicate = true;
+      } else {
+        seenFingerprintsInFile.add(fingerprint);
+      }
+
+      candidates.push({
+        date: parsedDate,
+        amount: tx.amount,
+        currency: 'INR',
+        direction: tx.direction || 'expense',
+        merchant,
+        description: tx.description.trim(),
+        category,
+        categorySource,
+        source: 'pdf',
+        fingerprint,
+        isDuplicate,
+      });
+    }
+
+    // Check duplicate fingerprints against existing database records for this user
+    const fingerprintsToCheck = candidates
+      .filter((c) => !c.isDuplicate)
+      .map((c) => c.fingerprint);
+
+    if (fingerprintsToCheck.length > 0) {
+      const existingTransactions = await Transaction.find({
+        userId: new mongoose.Types.ObjectId(userId),
+        fingerprint: { $in: fingerprintsToCheck },
+      }).select('fingerprint');
+
+      const existingFingerprintSet = new Set(existingTransactions.map((t) => t.fingerprint));
+
+      for (const candidate of candidates) {
+        if (!candidate.isDuplicate && existingFingerprintSet.has(candidate.fingerprint)) {
+          candidate.isDuplicate = true;
+        }
+      }
+    }
+
+    const duplicatesCount = candidates.filter((c) => c.isDuplicate).length;
+    const acceptedCount = candidates.filter((c) => !c.isDuplicate).length;
+    const rejectedCount = errors.length;
+
+    const importJob = await ImportJob.create({
+      userId: new mongoose.Types.ObjectId(userId),
+      filename,
+      status: 'preview',
+      counts: {
+        accepted: acceptedCount,
+        rejected: rejectedCount,
+        duplicates: duplicatesCount,
+      },
+      errors,
+      previewTransactions: candidates,
+      startedAt: new Date(),
+    });
+
+    return {
+      importJobId: importJob._id.toString(),
+      filename,
+      counts: {
+        accepted: acceptedCount,
+        rejected: rejectedCount,
+        duplicates: duplicatesCount,
+        totalRows: candidates.length + rejectedCount,
+      },
+      errors: errors.slice(0, 50),
+      sampleAccepted: candidates.filter((c) => !c.isDuplicate).slice(0, 10),
+      sampleDuplicates: candidates.filter((c) => c.isDuplicate).slice(0, 10),
+    };
+  },
+
+  /**
    * Step 2: Confirms an import session, persisting accepted candidates to the database.
    */
   confirmImport: async (
@@ -268,7 +406,7 @@ export const importService = {
           categoryConfidence: isUserSpecified ? null : (catRes?.categoryConfidence ?? null),
           modelVersion: isUserSpecified ? null : (catRes?.modelVersion ?? null),
           needsReview: isUserSpecified ? false : (catRes?.needsReview ?? false),
-          source: 'csv' as const,
+          source: (c.source as 'csv' | 'pdf') || (job.filename.toLowerCase().endsWith('.pdf') ? 'pdf' : 'csv'),
           fingerprint: c.fingerprint,
           isDuplicate: c.isDuplicate,
         };
