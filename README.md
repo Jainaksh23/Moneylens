@@ -114,25 +114,29 @@ bash scripts/smoke_test.sh
 cd backend
 npm test
 ```
-*Validates 7 test suites (89 tests): Authentication, Profile / CAS Export & Purge, Transactions & Deduplication, Analytics Aggregations, Cash-Flow Forecast & Goals, Anomaly Insights & Reminders, and Health Readiness probes.*
+*Validates 9 test suites (121 tests): Authentication, Profile / CAS Export & Purge, Transactions & Deduplication, Analytics Aggregations, Cash-Flow Forecast & Goals, Anomaly Insights & Reminders, RAG Financial Chat & Grounded Security, and Health Readiness probes.*
 
 ### 3. Frontend Test Suite (Vitest)
 ```bash
 cd frontend
 npm test
 ```
-*Validates React rendering, authentication state management, transaction lists, and financial health metric widgets.*
+*Validates 4 test suites (14 tests): Protected routing redirects, authentication forms & password policies, interaction filters, and UI loading/error states.*
 
 ### 4. ML Service Test Suite (Pytest)
 ```bash
 cd ml-service
 pytest -v
 ```
-*Validates 75 tests: Health & model readiness probes, internal key authentication, transaction categorization, time-series forecasting, goal feasibility scoring, and RAG vector store retrieval.*
+*Validates 9 test suites (77 tests): Health & model readiness probes, internal key authentication, transaction categorization, time-series forecasting, goal feasibility scoring, anomaly detection, and RAG vector store retrieval.*
 
-### 5. Run All Tests Across Monorepo
+### 5. Run Full End-to-End Verification Flow
 ```bash
-npm test
+# Complete end-to-end user simulation (register -> CSV import -> what-if -> RAG chat -> purge):
+node scripts/e2e_full_flow.js
+
+# Post-deploy live production smoke test (Render/Vercel):
+node scripts/post_deploy_smoke.js https://moneylens.vercel.app
 ```
 
 ---
