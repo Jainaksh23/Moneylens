@@ -1,0 +1,43 @@
+{
+  "modelVersion": "v1.0.1",
+  "artifactFile": "categorizer_v1.0.1.joblib",
+  "trainingDate": "2026-10-14T17:50:04.086637+00:00",
+  "datasetSize": 3581,
+  "trainSize": 2912,
+  "testSize": 728,
+  "classes": [
+    "Bills & Utilities",
+    "EMI/Loans",
+    "Education",
+    "Entertainment",
+    "Food",
+    "Groceries",
+    "Health",
+    "Income",
+    "Investments/SIP",
+    "Other",
+    "Rent",
+    "Shopping",
+    "Transport",
+    "Travel"
+  ],
+  "confidenceThreshold": 0.55,
+  "metrics": {
+    "trainAccuracy": 1.0,
+    "testAccuracy": 1.0
+  },
+  "hyperparameters": {
+    "C": 2.0,
+    "max_iter": 1000,
+    "class_weight": "balanced",
+    "word_ngrams": [
+      1,
+      2
+    ],
+    "char_ngrams": [
+      3,
+      5
+    ]
+  },
+  "feedbackIntegratedCount": 6
+}

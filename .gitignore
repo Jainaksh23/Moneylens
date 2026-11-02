@@ -30,11 +30,13 @@ out/
 chroma_data/
 chroma_db/
 *.chromadb
-models/
 artifacts/
 *.onnx
 *.pkl
-*.joblib
+
+# Explicitly track essential model metadata and active categorizer
+!ml-service/models/model_metadata.json
+!ml-service/models/categorizer_latest.joblib
 
 # Logs & Runtime
 logs/
