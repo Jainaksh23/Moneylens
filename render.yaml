@@ -2,11 +2,16 @@
 # MoneyLens Render Infrastructure Blueprint (render.yaml)
 # ==============================================================================
 # Deploy with Render Blueprints: https://dashboard.render.com/blueprints
+# NOTE: On Render Free Tier, only Web Services are free. Private Services and
+# Background Workers require the Starter plan ($7/month).
+# This is why the ML service is a public Web Service protected by X-Internal-Key.
+# Reference: https://jwatte.com/blog/render-com-platform-review/
 # ==============================================================================
 
 services:
   # ----------------------------------------------------------------------------
   # 1. MoneyLens ML Intelligence & Analytics Service (FastAPI)
+  #    Deploy this FIRST — backend depends on its URL.
   # ----------------------------------------------------------------------------
   - type: web
     name: moneylens-ml-service
@@ -15,22 +20,25 @@ services:
     dockerContext: ./ml-service
     plan: free
     region: oregon
-    healthCheckPath: /health/ready
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: ML_PORT
         value: 8000
       - key: INTERNAL_API_KEY
-        generateValue: true
+        sync: false  # Set manually: must match backend's INTERNAL_API_KEY
       - key: GROQ_API_KEY
-        sync: false # User supplies from console.groq.com
+        sync: false  # Get free key at https://console.groq.com/keys
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
       - key: CHROMA_PERSIST_DIR
-        value: /app/chroma_data
+        value: /tmp/chroma
+      - key: ENVIRONMENT
+        value: production
 
   # ----------------------------------------------------------------------------
   # 2. MoneyLens Core Backend API Gateway (Node.js 20 Express)
+  #    Deploy AFTER ml-service. Set ML_SERVICE_URL to ml-service's Render URL.
   # ----------------------------------------------------------------------------
   - type: web
     name: moneylens-backend
@@ -39,7 +47,7 @@ services:
     dockerContext: ./backend
     plan: free
     region: oregon
-    healthCheckPath: /health/ready
+    healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
@@ -47,22 +55,20 @@ services:
       - key: PORT
         value: 5000
       - key: MONGODB_URI
-        sync: false # User supplies MongoDB Atlas M0 SRV connection string
+        sync: false  # MongoDB Atlas SRV connection string
       - key: JWT_SECRET
-        generateValue: true
+        sync: false  # openssl rand -hex 32
       - key: COOKIE_NAME
         value: moneylens_token
       - key: ALLOWED_ORIGINS
-        sync: false # Set to your Vercel URL e.g. https://moneylens.vercel.app
+        sync: false  # Set to Vercel URL after frontend deploy, e.g. https://moneylens.vercel.app
       - key: ML_SERVICE_URL
-        fromService:
-          type: web
-          name: moneylens-ml-service
-          property: host
+        sync: false  # Set to ml-service Render URL, e.g. https://moneylens-ml-service.onrender.com
       - key: INTERNAL_API_KEY
-        fromService:
-          type: web
-          name: moneylens-ml-service
-          envVarKey: INTERNAL_API_KEY
+        sync: false  # Must match ml-service's INTERNAL_API_KEY exactly
+      - key: GROQ_API_KEY
+        sync: false  # Same Groq key as ml-service (optional, for backend-side RAG fallback)
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
       - key: ML_TIMEOUT_MS
         value: "15000"

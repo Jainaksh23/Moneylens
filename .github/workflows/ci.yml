@@ -32,8 +32,10 @@ jobs:
         run: npm ci
       - name: Run ESLint
         run: npm run lint
-      - name: Run Jest Test Suite (9 Suites, 121 Tests)
+      - name: Run Jest Test Suite (123 Tests)
         run: npm test
+      - name: Verify TypeScript Build
+        run: npm run build
 
   # ============================================================================
   # 2. Machine Learning & RAG Subsystem Validation
@@ -56,7 +58,7 @@ jobs:
         run: uv pip install --system -r requirements.txt
       - name: Run Ruff Linter
         run: ruff check .
-      - name: Run Pytest Suite (77 Tests)
+      - name: Run Pytest Suite (82 Tests)
         run: pytest -v
 
   # ============================================================================
@@ -118,3 +120,25 @@ jobs:
           file: ./frontend/Dockerfile
           push: false
           tags: moneylens-frontend:ci-check
+
+  # ============================================================================
+  # 5. Post-Deploy Live Smoke Test (runs only on main push, after Docker check)
+  # ============================================================================
+  post-deploy-smoke:
+    name: Post-Deploy Live Verification
+    runs-on: ubuntu-latest
+    needs: [docker-build-check]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Wait for Render Deploy (Cold Start Grace Period)
+        run: sleep 60
+      - name: Run Post-Deploy Smoke Test
+        run: node scripts/post_deploy_smoke.js ${{ vars.FRONTEND_URL || 'https://moneylens.vercel.app' }}
+        env:
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+        continue-on-error: true  # Don't fail CI if live services are cold/sleeping
