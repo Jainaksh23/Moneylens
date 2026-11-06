@@ -100,12 +100,12 @@ In [`ml-service/app/services/rag_service.py`](file:///d:/Moneylens/ml-service/ap
 
 #### Q12: How does the Vercel edge rewrite proxy work, and why was it necessary for cookies?
 **Answer**:
-When a frontend is hosted on `moneylens.vercel.app` and backend on `moneylens-backend.onrender.com`, browsers treat the backend as a third party. Privacy features like Safari ITP and Google Chrome Privacy Sandbox block or restrict third-party cookies by default.
+When a frontend is hosted on `moneylens.vercel.app` and backend on `moneylens-api.onrender.com`, browsers treat the backend as a third party. Privacy features like Safari ITP and Google Chrome Privacy Sandbox block or restrict third-party cookies by default.
 We configured edge rewrites in [`vercel.json`](file:///d:/Moneylens/vercel.json):
 ```json
 {
   "source": "/api/:match*",
-  "destination": "https://moneylens-backend.onrender.com/api/:match*"
+  "destination": "https://moneylens-api.onrender.com/api/:match*"
 }
 ```
 The browser sends all API requests to `https://moneylens.vercel.app/api/v1/...`. Vercel's edge network proxies these requests to Render, making all requests **first-party and same-site**. This allows standard `SameSite=Lax` cookies to work reliably across all browsers without requiring custom domain DNS configuration.
@@ -243,3 +243,4 @@ The test suite consists of **212 automated tests (100% passing)**:
 - **Backend (Jest, 9 Suites, 121 Tests)**: Covers auth validation, password hashing, CORS, rate limits, CSV streaming, transaction CRUD, aggregations, goal what-if formulas, reminder sync, RAG security, and cross-user isolation.
 - **ML Service (Pytest, 9 Suites, 77 Tests)**: Covers TF-IDF text cleaning, categorizer inference, fallback forecast, Prophet bounds, MAD anomaly detection, Monte Carlo goal simulation, RAG vector retrieval, and internal API key authentication.
 - **Frontend (Vitest, 4 Suites, 14 Tests)**: Covers protected routing redirects, authentication forms, filter interactions, and UI error states.
+

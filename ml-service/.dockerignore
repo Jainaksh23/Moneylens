@@ -13,3 +13,4 @@ htmlcov
 .env.*
 *.local
 chroma_data
+

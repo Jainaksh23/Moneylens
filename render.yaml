@@ -42,7 +42,7 @@ services:
   #    Deploy AFTER ml-service. Set ML_SERVICE_URL to ml-service's Render URL.
   # ----------------------------------------------------------------------------
   - type: web
-    name: moneylens-backend
+    name: moneylens-api
     runtime: docker
     rootDir: backend
     dockerfilePath: Dockerfile
@@ -54,8 +54,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5000
       - key: MONGODB_URI
         sync: false  # MongoDB Atlas SRV connection string
       - key: JWT_SECRET

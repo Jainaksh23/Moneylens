@@ -41,11 +41,12 @@ RUN chown -R node:node /app
 # Switch to non-root user
 USER node
 
-# Expose backend service port
-EXPOSE 5000
+# Expose backend service port (Render overrides with its own PORT env var)
+EXPOSE ${PORT:-5000}
 
 # Container healthcheck using backend readiness probe
+# Uses PORT env var so it works both locally (5000) and on Render (dynamic port)
 HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:5000/health/ready || exit 1
+  CMD curl -f http://localhost:${PORT:-5000}/health/ready || exit 1
 
 CMD ["node", "dist/server.js"]

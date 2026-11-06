@@ -20,7 +20,7 @@ flowchart TB
     end
 
     subgraph Render["Render Cloud (Oregon Region)"]
-        subgraph BackendService["moneylens-backend (Docker / Node 20)"]
+        subgraph BackendService["moneylens-api (Docker / Node 20)"]
             ExpressApp["Express API Gateway"]
             AuthMod["JWT & SameSite Cookie Auth"]
             RateLimitMod["IP Rate Limiters & CSRF Guard"]
@@ -63,7 +63,7 @@ To solve this completely without requiring custom domains or cross-site cookies:
    ```json
    {
      "source": "/api/:match*",
-     "destination": "https://moneylens-backend.onrender.com/api/:match*"
+     "destination": "https://moneylens-api.onrender.com/api/:match*"
    }
    ```
 3. Because the browser communicates exclusively with `moneylens.vercel.app`, the authentication cookie `moneylens_token` is treated as a **first-party, same-origin cookie**.
@@ -73,7 +73,7 @@ To solve this completely without requiring custom domains or cross-site cookies:
 
 ## 2. Environment Variables Reference
 
-### 2.1 Backend (`moneylens-backend`)
+### 2.1 Backend (`moneylens-api`)
 
 | Variable | Required | Default / Example | Purpose / Description |
 | :--- | :---: | :--- | :--- |
@@ -174,11 +174,11 @@ Follow these sequential steps to set up all services.
 4. Connect your GitHub repository (`Moneylens`).
 5. Render detects [`render.yaml`](file:///d:/Moneylens/render.yaml) automatically:
    - Service 1: `moneylens-ml-service` (Docker)
-   - Service 2: `moneylens-backend` (Docker)
+   - Service 2: `moneylens-api` (Docker)
 6. Render prompts for the non-synced variables:
    - For `moneylens-ml-service`:
      - `GROQ_API_KEY`: Paste your `gsk_...` key.
-   - For `moneylens-backend`:
+   - For `moneylens-api`:
      - `MONGODB_URI`: Paste your MongoDB Atlas SRV URI from Phase A.
      - `ALLOWED_ORIGINS`: Set to `https://moneylens.vercel.app` (you can update this once Vercel assigns your URL).
 7. Click **Apply Blueprint**.
@@ -214,10 +214,10 @@ If you prefer to configure each service manually:
    - Click **Deploy Web Service**.
    - Copy the deployed internal/public URL: `https://moneylens-ml-service.onrender.com`.
 
-2. **Deploy Backend Service (`moneylens-backend`)**:
+2. **Deploy Backend Service (`moneylens-api`)**:
    - Click **New +** -> **Web Service**.
    - Source: Connect GitHub repository (`Moneylens`).
-   - Name: `moneylens-backend`.
+   - Name: `moneylens-api`.
    - Region: `Oregon (US West)`.
    - Runtime: `Docker`.
    - **Root Directory & Docker Configuration**:
@@ -242,7 +242,7 @@ If you prefer to configure each service manually:
      - `INTERNAL_API_KEY`: (Same random key used in ML service)
      - `ML_TIMEOUT_MS`: `15000`
    - Click **Deploy Web Service**.
-   - Copy the backend URL: `https://moneylens-backend.onrender.com`.
+   - Copy the backend URL: `https://moneylens-api.onrender.com`.
 
 ---
 
@@ -254,7 +254,7 @@ If you prefer to configure each service manually:
      ```json
      {
        "source": "/api/:match*",
-       "destination": "https://moneylens-backend.onrender.com/api/:match*"
+       "destination": "https://moneylens-api.onrender.com/api/:match*"
      }
      ```
    - Commit and push to GitHub.
@@ -273,7 +273,7 @@ If you prefer to configure each service manually:
 3. **Verify Domain**:
    - Once deployment completes, Vercel gives you an URL (e.g. `https://moneylens-production.vercel.app`).
    - If your Vercel domain differs from what you put in `ALLOWED_ORIGINS` on Render:
-     - Return to Render Dashboard -> `moneylens-backend` -> **Environment**.
+     - Return to Render Dashboard -> `moneylens-api` -> **Environment**.
      - Update `ALLOWED_ORIGINS` to `https://moneylens-production.vercel.app`.
      - Click **Save Changes** (Render will trigger a quick redeployment).
 
@@ -379,7 +379,7 @@ Run the script against either your live Vercel frontend URL or Render backend UR
 node scripts/post_deploy_smoke.js https://moneylens.vercel.app
 
 # Option 2: Against direct Render backend domain
-node scripts/post_deploy_smoke.js https://moneylens-backend.onrender.com
+node scripts/post_deploy_smoke.js https://moneylens-api.onrender.com
 ```
 
 ### What the Smoke Test Verifies:
@@ -404,7 +404,7 @@ node scripts/post_deploy_smoke.js https://moneylens-backend.onrender.com
 
 ### 8.2 Rollback Render Services
 1. Go to [Render Dashboard](https://dashboard.render.com).
-2. Select `moneylens-backend` (or `moneylens-ml-service`).
+2. Select `moneylens-api` (or `moneylens-ml-service`).
 3. In the left navigation, click **Events** or **Deploys**.
 4. Find the previous stable build and click **Rollback to this deploy**.
 5. Render re-activates the previous Docker container image immediately without rebuilding.
@@ -426,7 +426,7 @@ node scripts/post_deploy_smoke.js https://moneylens-backend.onrender.com
 | Secret | Rotation Frequency | Zero-Downtime Procedure |
 | :--- | :--- | :--- |
 | **MongoDB Password** | 90 days | 1. In Atlas, create second user `moneylens_user_v2`.<br>2. Update `MONGODB_URI` in Render backend.<br>3. Once backend restarts and passes `/health/ready`, delete `moneylens_user` in Atlas. |
-| **INTERNAL_API_KEY** | 90 days | 1. Generate new 32-char hex key.<br>2. Update `INTERNAL_API_KEY` on `moneylens-ml-service`.<br>3. Immediately update `INTERNAL_API_KEY` on `moneylens-backend`.<br>4. Trigger deploy. |
+| **INTERNAL_API_KEY** | 90 days | 1. Generate new 32-char hex key.<br>2. Update `INTERNAL_API_KEY` on `moneylens-ml-service`.<br>3. Immediately update `INTERNAL_API_KEY` on `moneylens-api`.<br>4. Trigger deploy. |
 | **JWT_SECRET** | 180 days / Incident | 1. Generate new 64-char hex key.<br>2. Update `JWT_SECRET` in Render backend.<br>*(Note: Existing user sessions will be invalidated and users will need to re-log in.)* |
 | **GROQ_API_KEY** | On leak / 180 days | 1. In Groq Console, generate new key.<br>2. Update `GROQ_API_KEY` in `moneylens-ml-service`.<br>3. Delete previous key in Groq Console. |
 
@@ -437,7 +437,7 @@ node scripts/post_deploy_smoke.js https://moneylens-backend.onrender.com
 | Service | Component | Plan / Tier | Monthly Cost | Constraints / Limits |
 | :--- | :--- | :--- | :---: | :--- |
 | **MongoDB Atlas** | Database Cluster | M0 Shared | **$0.00** | 512 MB storage, shared vCPU, 500 connections max |
-| **Render** | `moneylens-backend` | Free Web Service | **$0.00** | 512 MB RAM, 0.1 CPU, spins down after 15 min idle |
+| **Render** | `moneylens-api` | Free Web Service | **$0.00** | 512 MB RAM, 0.1 CPU, spins down after 15 min idle |
 | **Render** | `moneylens-ml-service` | Free Web Service | **$0.00** | 512 MB RAM, 0.1 CPU, spins down after 15 min idle |
 | **Vercel** | `moneylens-frontend` | Hobby Tier | **$0.00** | 100 GB bandwidth, unlimited edge rewrites |
 | **Groq Cloud** | Llama 3.3 70B LLM | Free Developer Tier | **$0.00** | 30 requests/min, 14,400 requests/day |
@@ -449,7 +449,7 @@ node scripts/post_deploy_smoke.js https://moneylens-backend.onrender.com
 
 ### 1. CORS Error: `Origin https://... not allowed by CORS`
 - **Cause**: Browser domain does not match `ALLOWED_ORIGINS` in Render backend.
-- **Fix**: Check your active Vercel domain (e.g. `https://moneylens-app.vercel.app`). In Render -> `moneylens-backend` -> Environment -> Set `ALLOWED_ORIGINS` to the exact Vercel domain (no trailing slash).
+- **Fix**: Check your active Vercel domain (e.g. `https://moneylens-app.vercel.app`). In Render -> `moneylens-api` -> Environment -> Set `ALLOWED_ORIGINS` to the exact Vercel domain (no trailing slash).
 
 ### 2. Missing Cookies / 401 Unauthorized After Login
 - **Cause**: The frontend is sending requests directly to Render (`backend.onrender.com`) instead of the relative path (`/api/v1`), triggering browser third-party cookie blocking.
@@ -462,3 +462,4 @@ node scripts/post_deploy_smoke.js https://moneylens-backend.onrender.com
 ### 4. MongoDB Atlas `MongooseServerSelectionError: connection timed out`
 - **Cause**: IP allowlist in Atlas does not allow the current Render IP.
 - **Fix**: Go to MongoDB Atlas -> **Network Access** -> Ensure `0.0.0.0/0` (Allow Access from Anywhere) is active.
+

@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://moneylens-backend.onrender.com/api/:match*"
+      "destination": "https://moneylens-api.onrender.com/api/:match*"
     },
     {
       "source": "/(.*)",
