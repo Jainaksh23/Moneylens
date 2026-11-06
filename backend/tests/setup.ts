@@ -1,3 +1,5 @@
+process.env.NODE_ENV = 'test';
+
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { resetAuthLimiters } from '../src/middlewares/rateLimiter.js';
@@ -7,6 +9,7 @@ let mongoServer: MongoMemoryServer;
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
+  process.env.MONGODB_URI = mongoUri;
   await mongoose.connect(mongoUri);
 }, 60000);
 

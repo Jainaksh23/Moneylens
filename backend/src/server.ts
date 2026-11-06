@@ -1,31 +1,17 @@
-import mongoose from 'mongoose';
 import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { connectDB, setupGracefulShutdown } from './config/db.js';
 import { logger } from './utils/logger.js';
 
 async function startServer() {
   try {
-    let mongoUri = env.MONGODB_URI;
-    try {
-      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 2500 });
-      logger.info('Connected to MongoDB database');
-    } catch (connErr) {
-      if (env.NODE_ENV === 'development') {
-        logger.warn(
-          'Configured MongoDB URI is unreachable. Launching embedded MongoDB for local development...',
-        );
-        const { MongoMemoryServer } = await import('mongodb-memory-server');
-        const memoryServer = await MongoMemoryServer.create();
-        mongoUri = memoryServer.getUri();
-        await mongoose.connect(mongoUri);
-        logger.info('Connected to embedded in-memory MongoDB database for development');
-      } else {
-        throw connErr;
-      }
-    }
+    // 1. Connect once to MongoDB at startup (serverSelectionTimeoutMS: 10000)
+    await connectDB();
 
+    // 2. Initialize Express application
     const app = createApp();
 
+    // 3. Start HTTP server
     const server = app.listen(env.PORT, () => {
       logger.info(
         {
@@ -37,30 +23,13 @@ async function startServer() {
       );
     });
 
-    // Graceful shutdown handling
-    const shutdown = (signal: string) => {
-      logger.info({ signal }, `Received ${signal}, initiating graceful shutdown...`);
-      server.close(async () => {
-        try {
-          await mongoose.disconnect();
-        } catch {
-          // Ignore
-        }
-        logger.info('HTTP server and database connections closed. Exiting process.');
-        process.exit(0);
-      });
-
-      // Force close after 10s timeout
-      setTimeout(() => {
-        logger.error('Forced shutdown timeout exceeded. Exiting immediately.');
-        process.exit(1);
-      });
-    };
-
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
+    // 4. Register graceful shutdown on SIGINT / SIGTERM
+    setupGracefulShutdown(server);
   } catch (err) {
-    logger.fatal({ err }, 'Fatal error during server startup');
+    logger.fatal(
+      { err: err instanceof Error ? err.message : String(err) },
+      'Fatal error during server startup',
+    );
     process.exit(1);
   }
 }

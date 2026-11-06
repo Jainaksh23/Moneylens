@@ -4,6 +4,7 @@
   "description": "MoneyLens API Gateway & Core Financial Backend",
   "main": "dist/server.js",
   "scripts": {
+    "db:check": "node ../scripts/check_db.js",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",

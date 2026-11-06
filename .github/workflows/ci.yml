@@ -32,7 +32,7 @@ jobs:
         run: npm ci
       - name: Run ESLint
         run: npm run lint
-      - name: Run Jest Test Suite (123 Tests)
+      - name: Run Jest Test Suite (125 Tests)
         run: npm test
       - name: Verify TypeScript Build
         run: npm run build
@@ -52,14 +52,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install uv Package Manager
-        run: pip install uv
+          cache: 'pip'
+          cache-dependency-path: ml-service/requirements.txt
       - name: Install Dependencies
-        run: uv pip install --system -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
       - name: Run Ruff Linter
         run: ruff check .
       - name: Run Pytest Suite (82 Tests)
-        run: pytest -v
+        run: python -m pytest -v
 
   # ============================================================================
   # 3. Frontend React / Vite Application Validation

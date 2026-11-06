@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 // Mock matchMedia for responsive / dark mode testing
 Object.defineProperty(window, 'matchMedia', {

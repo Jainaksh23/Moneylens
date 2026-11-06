@@ -1,10 +1,12 @@
 services:
   # ==========================================
-  # 1. MongoDB Database
+  # 1. MongoDB Database (Optional: use --profile local-db for local container)
   # ==========================================
   mongo:
     image: mongo:7.0
     container_name: moneylens-mongo
+    profiles:
+      - local-db
     restart: unless-stopped
     volumes:
       - mongo_data:/data/db
@@ -18,13 +20,13 @@ services:
       start_period: 10s
 
   # ==========================================
-  # 2. Mongo Express (Database GUI - Dev Profile Only)
+  # 2. Mongo Express (Database GUI - Optional: profile local-db)
   # ==========================================
   mongo-express:
     image: mongo-express:1.0.2-alpine
     container_name: moneylens-mongo-express
     profiles:
-      - dev
+      - local-db
     restart: unless-stopped
     environment:
       ME_CONFIG_MONGODB_SERVER: mongo
@@ -86,8 +88,6 @@ services:
       ML_SERVICE_URL: http://ml-service:8000
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     depends_on:
-      mongo:
-        condition: service_healthy
       ml-service:
         condition: service_healthy
     healthcheck:

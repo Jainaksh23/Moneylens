@@ -19,6 +19,7 @@ dependencies = [
     "pytest-asyncio>=1.4.0",
     "ruff>=0.17.1",
     "pdfplumber>=0.11.0",
+    "python-multipart>=0.0.18",
 ]
 
 [tool.ruff]

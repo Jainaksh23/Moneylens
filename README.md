@@ -400,14 +400,14 @@ npm run dev
 
 ## ⚙️ Environment Configuration (.env)
 
-The root `.env.example` provides default configuration values for both Docker and local setups:
+The root `.env.example` (and `backend/.env.example`) provides configuration templates for both Docker and local setups:
 
 | Variable | Default Value | Description |
 | :--- | :--- | :--- |
 | `NODE_ENV` | `development` | Environment mode (`development` or `production`). |
 | `FRONTEND_PORT` | `5173` | Host port mapped to Frontend Nginx service. |
 | `BACKEND_PORT` | `5000` | Host port mapped to Node.js Express API gateway. |
-| `MONGODB_URI` | `mongodb://mongo:27017/moneylens` | MongoDB connection URI (`mongodb://localhost:27017/moneylens` for bare-metal). |
+| `MONGODB_URI` | `mongodb+srv://<db_username>:<db_password>@<cluster-host>/moneylens?retryWrites=true&w=majority` | MongoDB connection URI (MongoDB Atlas SRV or local MongoDB). |
 | `JWT_SECRET` | *32+ character random string* | Secret used for cryptographic signing of session JWTs. |
 | `COOKIE_NAME` | `moneylens_token` | Name of the secure httpOnly authentication cookie. |
 | `ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | CORS allowed origins. |
@@ -415,6 +415,43 @@ The root `.env.example` provides default configuration values for both Docker an
 | `GROQ_API_KEY` | `gsk_your_groq_api_key` | Free Groq API key for conversational AI ([Get key](https://console.groq.com/keys)). |
 | `GROQ_MODEL` | `llama-3.3-70b-versatile` | Model used for grounded educational chat. |
 | `CHROMA_PERSIST_DIR` | `/app/chroma_data` | Directory where ChromaDB vector embeddings are persisted. |
+
+### 🗄️ Configuring MongoDB Connection (`MONGODB_URI`)
+
+MoneyLens supports **MongoDB Atlas** (cloud database) by default, as well as an optional local MongoDB instance:
+
+1. **MongoDB Atlas (Recommended - Free M0 Cluster)**:
+   - Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (e.g., AWS `ap-south-1` Mumbai).
+   - In **Database Access**, create a user with `readWrite` access to the `moneylens` database.
+   - In **Network Access**, add your current IP address (or `0.0.0.0/0` for development).
+   - Copy the SRV connection string and set `MONGODB_URI` in `backend/.env` (or root `.env`):
+     ```env
+     MONGODB_URI=mongodb+srv://<db_username>:<db_password>@<cluster-host>/moneylens?retryWrites=true&w=majority
+     ```
+     > **Note**: If your password contains special characters (such as `@`, `:`, `/`, `#`), ensure they are URL-encoded (e.g. `@` becomes `%40`, `#` becomes `%23`).
+   - Verify connectivity instantly with the diagnostic script:
+     ```bash
+     npm run db:check
+     # or inside backend: npm --prefix backend run db:check
+     ```
+     This script validates the connection, pings the database, and prints `OK` (never exposing credentials or URI).
+
+2. **Local MongoDB via Docker Compose**:
+   - The local `mongo` and `mongo-express` services are grouped under the `local-db` profile.
+   - To run with local Docker MongoDB instead of Atlas:
+     ```bash
+     docker compose --profile local-db up -d
+     ```
+   - In `.env`, set:
+     ```env
+     MONGODB_URI=mongodb://mongo:27017/moneylens
+     ```
+
+3. **Standalone Bare-Metal MongoDB**:
+   - If running a local `mongod` service directly on your host machine:
+     ```env
+     MONGODB_URI=mongodb://localhost:27017/moneylens
+     ```
 
 ---
 

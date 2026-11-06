@@ -47,6 +47,36 @@ describe('Backend Health & Core Middleware Tests', () => {
     expect(res.body.checks.database).toBe('connected');
   });
 
+  it('GET /api/v1/ready should return 200 when MongoDB is connected without leaking internals', async () => {
+    const res = await request(app).get('/api/v1/ready');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      status: 'ok',
+      checks: {
+        database: 'connected',
+      },
+    });
+    expect(res.body).not.toHaveProperty('uri');
+    expect(res.body).not.toHaveProperty('host');
+    expect(res.body).not.toHaveProperty('database');
+  });
+
+  it('GET /api/v1/ready should return 503 when database is disconnected', async () => {
+    const readyStateSpy = jest.spyOn(dbHealth, 'isReady').mockReturnValue(false);
+
+    const res = await request(app).get('/api/v1/ready');
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({
+      status: 'unavailable',
+      checks: {
+        database: 'disconnected',
+      },
+    });
+
+    readyStateSpy.mockRestore();
+  });
+
   it('should return 503 when database is disconnected', async () => {
     const readyStateSpy = jest.spyOn(dbHealth, 'isReady').mockReturnValue(false);
 

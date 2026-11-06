@@ -22,9 +22,11 @@ out/
 
 # Environment Variables & Secrets (NEVER commit .env files)
 .env
-.env.local
-.env.*.local
+.env.*
+*.local
 *.pem
+!.env.example
+!**/.env.example
 
 # Vector Database & Model Artifacts
 chroma_data/
