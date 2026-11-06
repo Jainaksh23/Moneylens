@@ -16,8 +16,9 @@ services:
   - type: web
     name: moneylens-ml-service
     runtime: docker
-    dockerfilePath: ./ml-service/Dockerfile
-    dockerContext: ./ml-service
+    rootDir: ml-service
+    dockerfilePath: Dockerfile
+    dockerContext: .
     plan: free
     region: oregon
     healthCheckPath: /health
@@ -43,8 +44,9 @@ services:
   - type: web
     name: moneylens-backend
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    dockerContext: .
     plan: free
     region: oregon
     healthCheckPath: /api/v1/health

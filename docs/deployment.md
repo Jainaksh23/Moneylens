@@ -190,12 +190,19 @@ If you prefer to configure each service manually:
 
 1. **Deploy ML Service (`moneylens-ml-service`)**:
    - Click **New +** -> **Web Service**.
-   - Source: Connect GitHub repository.
+   - Source: Connect GitHub repository (`Moneylens`).
    - Name: `moneylens-ml-service`.
    - Region: `Oregon (US West)`.
    - Runtime: `Docker`.
-   - Docker Context Directory: `./ml-service`.
-   - Dockerfile Path: `./ml-service/Dockerfile`.
+   - **Root Directory & Docker Configuration**:
+     - **Option A (Recommended — Root Directory set)**:
+       - **Root Directory**: `ml-service`
+       - **Docker Build Context Directory**: `.` (or leave blank)
+       - **Dockerfile Path**: `Dockerfile` (or leave blank)
+     - **Option B (Repository Root)**:
+       - **Root Directory**: *(leave blank)*
+       - **Docker Build Context Directory**: `./ml-service`
+       - **Dockerfile Path**: `./ml-service/Dockerfile`
    - Plan: `Free`.
    - Health Check Path: `/health/ready`.
    - Add Environment Variables:
@@ -209,12 +216,19 @@ If you prefer to configure each service manually:
 
 2. **Deploy Backend Service (`moneylens-backend`)**:
    - Click **New +** -> **Web Service**.
-   - Source: Connect GitHub repository.
+   - Source: Connect GitHub repository (`Moneylens`).
    - Name: `moneylens-backend`.
    - Region: `Oregon (US West)`.
    - Runtime: `Docker`.
-   - Docker Context Directory: `./backend`.
-   - Dockerfile Path: `./backend/Dockerfile`.
+   - **Root Directory & Docker Configuration**:
+     - **Option A (Recommended — Root Directory set)**:
+       - **Root Directory**: `backend`
+       - **Docker Build Context Directory**: `.` (or leave blank)
+       - **Dockerfile Path**: `Dockerfile` (or leave blank)
+     - **Option B (Repository Root)**:
+       - **Root Directory**: *(leave blank)*
+       - **Docker Build Context Directory**: `./backend`
+       - **Dockerfile Path**: `./backend/Dockerfile`
    - Plan: `Free`.
    - Health Check Path: `/health/ready`.
    - Add Environment Variables:
