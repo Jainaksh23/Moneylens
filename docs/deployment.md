@@ -218,10 +218,10 @@ If you prefer to configure each service manually:
    - Click **New +** -> **Web Service**.
    - Source: Connect GitHub repository (`Moneylens`).
    - Name: `moneylens-api`.
-   - Region: `Oregon (US West)`.
+   - Region: Same region as ML service (e.g. `Oregon (US West)`).
    - Runtime: `Docker`.
    - **Root Directory & Docker Configuration**:
-     - **Option A (Recommended — Root Directory set)**:
+     - **Option A (Standard — Root Directory set)**:
        - **Root Directory**: `backend`
        - **Docker Build Context Directory**: `.` (or leave blank)
        - **Dockerfile Path**: `Dockerfile` (or leave blank)
@@ -230,49 +230,54 @@ If you prefer to configure each service manually:
        - **Docker Build Context Directory**: `./backend`
        - **Dockerfile Path**: `./backend/Dockerfile`
    - Plan: `Free`.
-   - Health Check Path: `/health/ready`.
-   - Add Environment Variables:
+   - Health Check Path: `/api/v1/health`
+   - Add Environment Variables (Render sets `PORT` automatically; do not set `PORT`):
      - `NODE_ENV`: `production`
-     - `PORT`: `5000`
-     - `MONGODB_URI`: Your Atlas URI.
-     - `JWT_SECRET`: Random 64-character secret.
+     - `MONGODB_URI`: Atlas connection string (e.g. `mongodb+srv://...`)
+     - `JWT_SECRET`: Random 64-character hex string (generated via `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
      - `COOKIE_NAME`: `moneylens_token`
-     - `ALLOWED_ORIGINS`: `https://moneylens.vercel.app`
-     - `ML_SERVICE_URL`: `https://moneylens-ml-service.onrender.com`
-     - `INTERNAL_API_KEY`: (Same random key used in ML service)
-     - `ML_TIMEOUT_MS`: `15000`
+     - `INTERNAL_API_KEY`: Same shared internal secret as configured in ML service
+     - `ML_SERVICE_URL`: URL of the deployed ML service (e.g. `https://moneylens-ml.onrender.com`)
+     - `GROQ_API_KEY`: Your Groq API key
+     - `GROQ_MODEL`: `llama-3.3-70b-versatile`
+     - `ALLOWED_ORIGINS`: Your frontend origin (initially `http://localhost:5173`, update to `https://<your-vercel-app>.vercel.app` after frontend deploy)
    - Click **Deploy Web Service**.
-   - Copy the backend URL: `https://moneylens-api.onrender.com`.
+   - Copy the deployed backend URL: `https://moneylens-api.onrender.com`.
 
 ---
 
 ### Phase D: Deploy Frontend to Vercel
 
 1. **Configure Rewrite Target**:
-   - Open [`frontend/vercel.json`](file:///d:/Moneylens/frontend/vercel.json) and [`vercel.json`](file:///d:/Moneylens/vercel.json).
-   - Ensure the rewrite destination matches your Render backend URL:
+   - Open [`frontend/vercel.json`](file:///d:/Moneylens/frontend/vercel.json).
+   - In `frontend/vercel.json`, replace `<BACKEND_HOST>` with your actual Render backend hostname (e.g. `moneylens-api.onrender.com`):
      ```json
      {
-       "source": "/api/:match*",
-       "destination": "https://moneylens-api.onrender.com/api/:match*"
+       "source": "/api/:path*",
+       "destination": "https://<BACKEND_HOST>/api/:path*"
      }
      ```
    - Commit and push to GitHub.
+
 2. **Import into Vercel**:
    - Navigate to [vercel.com/dashboard](https://vercel.com/dashboard) and log in.
    - Click **Add New...** -> **Project**.
    - Import your MoneyLens repository.
+   - **Root Directory**: Click **Edit** and set to `frontend`.
    - Framework Preset: **Vite**.
-   - Root Directory: Click **Edit** and choose `frontend`.
    - Build and Output Settings:
      - Build Command: `npm run build`
      - Output Directory: `dist`
      - Install Command: `npm install`
-   - Environment Variables: None required (since API calls use same-site relative `/api/v1` routes).
+   - **Environment Variables**:
+     - `VITE_API_BASE_URL`: `/api/v1` (enables same-site relative routing so cookies stay same-site across reverse proxy)
    - Click **Deploy**.
-3. **Verify Domain**:
-   - Once deployment completes, Vercel gives you an URL (e.g. `https://moneylens-production.vercel.app`).
-   - If your Vercel domain differs from what you put in `ALLOWED_ORIGINS` on Render:
+
+3. **Verify & Link Backend CORS**:
+   - Once deployment completes, Vercel gives you an URL (e.g. `https://moneylens.vercel.app`).
+   - Return to **Render Dashboard** -> **`moneylens-api`** -> **Environment**.
+   - Update `ALLOWED_ORIGINS` to include your Vercel URL (e.g. `https://moneylens.vercel.app`).
+   - Click **Save Changes** (Render will trigger a redeployment).
      - Return to Render Dashboard -> `moneylens-api` -> **Environment**.
      - Update `ALLOWED_ORIGINS` to `https://moneylens-production.vercel.app`.
      - Click **Save Changes** (Render will trigger a quick redeployment).

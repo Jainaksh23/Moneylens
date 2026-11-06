@@ -8,8 +8,9 @@ export const forecastRouter = Router();
 
 forecastRouter.use(authMiddleware);
 
-// Reuse fetchWithRetry pattern from mlClient
-const TIMEOUT_MS = 8000; // Forecast can take longer than categorization
+// Render free-tier ML service sleeps after 15 min and takes ~60s to wake.
+// Use 70s timeout to survive a cold start, with 1 retry (2 total attempts).
+const TIMEOUT_MS = process.env.NODE_ENV === 'test' ? 300 : 70_000;
 const MAX_RETRIES = 1;
 
 async function fetchMLForecast(

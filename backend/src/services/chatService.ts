@@ -98,6 +98,10 @@ export class ChatService {
    */
   private async retrieveKnowledge(query: string): Promise<{ chunks: any[]; isWeak: boolean }> {
     try {
+      const timeoutMs = process.env.NODE_ENV === 'test' ? 300 : 70_000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
       const resp = await fetch(`${env.ML_SERVICE_URL}/rag/retrieve`, {
         method: 'POST',
         headers: {
@@ -109,7 +113,9 @@ export class ChatService {
           topK: 4,
           minSimilarity: 0.32,
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!resp.ok) {
         return { chunks: [], isWeak: true };
@@ -418,10 +424,14 @@ ${userDataContextText.trim() || 'No specific user transactional aggregates reque
       toolsUsed: [],
     });
 
+    const assistantContent =
+      completion.content?.trim() ||
+      'I am ready to help with your personal finances. You can ask about your spending, goals, or financial concepts.';
+
     await ChatMessage.create({
       userId: userObjId,
       role: 'assistant',
-      content: completion.content,
+      content: assistantContent,
       evidence,
       limitations,
       disclaimer,
@@ -430,7 +440,7 @@ ${userDataContextText.trim() || 'No specific user transactional aggregates reque
     });
 
     return {
-      answer: completion.content,
+      answer: assistantContent,
       evidence,
       limitations,
       disclaimer,

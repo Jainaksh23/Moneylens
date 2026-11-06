@@ -32,9 +32,12 @@ interface MLBatchResponse {
 }
 
 const isTest = process.env.NODE_ENV === 'test';
-const TIMEOUT_MS = isTest ? 300 : parseInt(process.env.ML_TIMEOUT_MS || '15000', 10);
-const MAX_RETRIES = isTest ? 0 : 2;
-const INITIAL_BACKOFF_MS = isTest ? 10 : 1000;
+
+// Render free-tier ML service sleeps after 15 min and takes ~60s to wake.
+// Use 70s timeout to survive a cold start, with 1 retry (2 total attempts).
+const TIMEOUT_MS = isTest ? 300 : parseInt(process.env.ML_TIMEOUT_MS || '70000', 10);
+const MAX_RETRIES = isTest ? 0 : 1;
+const INITIAL_BACKOFF_MS = isTest ? 10 : 2000;
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
   let attempt = 0;

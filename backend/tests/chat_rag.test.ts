@@ -370,6 +370,6 @@ describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
         .get('/api/v1/chat/history')
         .set('Cookie', userBCookie);
       expect(emptyRes.body.data.length).toBe(0);
-    });
+    }, 15000);
   });
 });

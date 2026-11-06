@@ -100,6 +100,9 @@ export class GroqService {
         const data: any = await response.json();
         const choice = data.choices?.[0];
         const content = choice?.message?.content || '';
+        if (!content.trim()) {
+          throw new Error('Groq API returned empty or missing completion content');
+        }
 
         return {
           content,

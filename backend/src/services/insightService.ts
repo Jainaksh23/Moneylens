@@ -7,7 +7,52 @@ import { Goal } from '../models/Goal.js';
 import { Reminder } from '../models/Reminder.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
-const TIMEOUT_MS = 6000;
+const isTest = process.env.NODE_ENV === 'test';
+// Render free-tier ML service sleeps after 15 min and takes ~60s to wake.
+// Use 70s timeout to survive a cold start, with 1 retry (2 total attempts).
+const TIMEOUT_MS = isTest ? 300 : 70_000;
+const MAX_RETRIES = isTest ? 0 : 1;
+
+async function fetchMLWithRetry(
+  url: string,
+  options: RequestInit,
+  retries = MAX_RETRIES,
+): Promise<Response> {
+  let attempt = 0;
+  while (attempt <= retries) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return response;
+      }
+
+      if (response.status >= 500 && attempt < retries) {
+        attempt++;
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+
+      return response;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (attempt < retries) {
+        attempt++;
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
 
 interface AnomalyResult {
   transactionId: string;
@@ -133,19 +178,14 @@ export const insightService = {
 
     // 2. Call ML Service
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-      const res = await fetch(`${env.ML_SERVICE_URL}/anomalies/detect`, {
+      const res = await fetchMLWithRetry(`${env.ML_SERVICE_URL}/anomalies/detect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Internal-Key': env.INTERNAL_API_KEY,
         },
         body: JSON.stringify(payload),
-        signal: controller.signal,
       });
-      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = (await res.json()) as {
@@ -345,7 +385,7 @@ export const insightService = {
     try {
       const allTxs = await Transaction.find({ userId }).sort({ date: 1 }).lean();
       if (allTxs.length >= 2) {
-        const recRes = await fetch(`${env.ML_SERVICE_URL}/recurring/detect`, {
+        const recRes = await fetchMLWithRetry(`${env.ML_SERVICE_URL}/recurring/detect`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -397,10 +437,7 @@ export const insightService = {
     // 6. Call ML Recommendation Engine
     let recommendations: RecommendationResult[] = [];
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-      const res = await fetch(
+      const res = await fetchMLWithRetry(
         `${env.ML_SERVICE_URL}/recommendations/features`,
         {
           method: 'POST',
@@ -409,10 +446,8 @@ export const insightService = {
             'X-Internal-Key': env.INTERNAL_API_KEY,
           },
           body: JSON.stringify(contextPayload),
-          signal: controller.signal,
         },
       );
-      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = (await res.json()) as {
@@ -500,7 +535,7 @@ Polished:`;
     }
 
     try {
-      const res = await fetch(`${env.ML_SERVICE_URL}/recurring/detect`, {
+      const res = await fetchMLWithRetry(`${env.ML_SERVICE_URL}/recurring/detect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

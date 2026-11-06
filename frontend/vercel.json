@@ -3,8 +3,8 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://moneylens-api.onrender.com/api/:match*"
+      "source": "/api/:path*",
+      "destination": "https://<BACKEND_HOST>/api/:path*"
     },
     {
       "source": "/(.*)",

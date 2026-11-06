@@ -11,8 +11,8 @@ async function startServer() {
     // 2. Initialize Express application
     const app = createApp();
 
-    // 3. Start HTTP server
-    const server = app.listen(env.PORT, () => {
+    // 3. Start HTTP server binding explicitly to 0.0.0.0
+    const server = app.listen(env.PORT, '0.0.0.0', () => {
       logger.info(
         {
           port: env.PORT,
