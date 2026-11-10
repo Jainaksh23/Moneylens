@@ -18,6 +18,7 @@ from typing import Any
 import chromadb
 from chromadb.config import Settings
 
+from ..logging_config import logger
 from ..schemas.rag import RetrievedChunk, RetrieveResponse
 
 COLLECTION_NAME = "moneylens_financial_knowledge"
@@ -36,17 +37,24 @@ class RAGService:
         else:
             self.persist_dir = base_dir / "data" / "chroma_db"
 
-        if knowledge_dir is not None:
-            self.knowledge_dir = Path(knowledge_dir)
-        else:
-            local_knowledge = base_dir / "knowledge"
-            workspace_knowledge = workspace_root / "rag" / "knowledge"
-            if local_knowledge.exists() and any(local_knowledge.glob("*.md")):
-                self.knowledge_dir = local_knowledge
-            elif workspace_knowledge.exists() and any(workspace_knowledge.glob("*.md")):
-                self.knowledge_dir = workspace_knowledge
-            else:
-                self.knowledge_dir = local_knowledge
+        # Resolve knowledge directory robustly across local dev, monorepo root, and Docker
+        candidate_dirs = [
+            Path(knowledge_dir) if knowledge_dir is not None else None,
+            Path(os.environ.get("KNOWLEDGE_DIR", "")) if os.environ.get("KNOWLEDGE_DIR") else None,
+            base_dir / "rag" / "knowledge",
+            workspace_root / "rag" / "knowledge",
+            base_dir / "knowledge",
+            Path.cwd() / "rag" / "knowledge",
+            Path.cwd() / "knowledge",
+            Path("/app/rag/knowledge"),
+            Path("/app/knowledge"),
+        ]
+        chosen_dir = None
+        for cand in candidate_dirs:
+            if cand and cand.exists() and any(f for f in cand.glob("*.md") if f.name.lower() != "readme.md"):
+                chosen_dir = cand
+                break
+        self.knowledge_dir = chosen_dir if chosen_dir is not None else (base_dir / "knowledge")
 
         self.persist_dir.mkdir(parents=True, exist_ok=True)
 
@@ -220,14 +228,45 @@ class RAGService:
             "total_collection_count": self.collection.count(),
         }
 
-    def ensure_ingested_on_startup(self) -> None:
+    def ensure_ingested_on_startup(self) -> int:
         """
         Checks if the collection has documents. If empty, automatically runs ingestion.
         Crucial for zero-configuration, containerized, or ephemeral deployments.
+        Logs chunk count and any embedding-model load error without secrets.
         """
-        current_count = self.count()
-        if current_count == 0:
-            self.ingest_all(force_reindex=False)
+        try:
+            current_count = self.count()
+            if current_count == 0:
+                logger.info(
+                    "ChromaDB knowledge collection is empty. Starting startup ingestion...",
+                    extra={"knowledge_dir": str(self.knowledge_dir)},
+                )
+                ingest_res = self.ingest_all(force_reindex=False)
+                current_count = self.count()
+                logger.info(
+                    "Startup RAG ingestion completed",
+                    extra={
+                        "chunk_count": current_count,
+                        "files_processed": ingest_res.get("files_processed", 0),
+                        "collection_ready": current_count > 0,
+                    },
+                )
+            else:
+                logger.info(
+                    "ChromaDB knowledge collection ready",
+                    extra={
+                        "chunk_count": current_count,
+                        "collection_ready": True,
+                    },
+                )
+            return current_count
+        except Exception as err:
+            logger.error(
+                "RAG startup ingestion / embedding model load error: %s",
+                str(err),
+                extra={"collection_ready": False, "chunk_count": 0},
+            )
+            return 0
 
     def retrieve(
         self,

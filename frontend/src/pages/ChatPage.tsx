@@ -31,6 +31,16 @@ export function getFriendlyChatError(
   fallbackMessage?: string | null,
 ): { message: string; canRetry: boolean } {
   switch (code) {
+    case 'LLM_MODEL_NOT_FOUND':
+      return {
+        message: 'Assistant model is misconfigured. Please check GROQ_MODEL in deployment settings.',
+        canRetry: false,
+      };
+    case 'LLM_UPSTREAM_ERROR':
+      return {
+        message: 'Assistant provider encountered an error. Please retry in a moment.',
+        canRetry: true,
+      };
     case 'LLM_NOT_CONFIGURED':
       return {
         message: 'Assistant is not configured. Please add GROQ_API_KEY in deployment settings.',

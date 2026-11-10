@@ -12,6 +12,8 @@ export type ErrorCode =
   | 'LLM_AUTH_FAILED'
   | 'LLM_RATE_LIMITED'
   | 'LLM_TIMEOUT'
+  | 'LLM_MODEL_NOT_FOUND'
+  | 'LLM_UPSTREAM_ERROR'
   | 'RAG_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 

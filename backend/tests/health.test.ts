@@ -102,4 +102,46 @@ describe('Backend Health & Core Middleware Tests', () => {
     expect(res.body.error.message).toBeDefined();
     expect(res.body.requestId).toBeDefined();
   });
+
+  it('should never rate-limit /api/v1/health even after 500 requests while route limiters remain active', async () => {
+    const express = (await import('express')).default;
+    const { generalLimiter, loginLimiter } = await import('../src/middlewares/rateLimiter.js');
+    const { healthRouter } = await import('../src/routes/health.routes.js');
+
+    const testApp = express();
+    // Mount health probes before limiter, and apply generalLimiter to general routes
+    testApp.use('/api/v1', healthRouter);
+    testApp.use(generalLimiter);
+    testApp.post('/api/v1/auth/login', loginLimiter, (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+
+    // Send 500 requests to /api/v1/health in concurrent batches from simulated orchestrator
+    const batchSize = 50;
+    for (let i = 0; i < 500; i += batchSize) {
+      const results = await Promise.all(
+        Array.from({ length: batchSize }, () => request(testApp).get('/api/v1/health')),
+      );
+      for (const res of results) {
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ status: 'ok' });
+      }
+    }
+
+    // Verify login rate limiter triggers 429 when its limit (10) is exceeded
+    let loginHit429 = false;
+    for (let i = 0; i < 15; i++) {
+      const res = await request(testApp).post('/api/v1/auth/login');
+      if (res.status === 429) {
+        loginHit429 = true;
+        break;
+      }
+    }
+    expect(loginHit429).toBe(true);
+
+    // And /api/v1/health STILL returns 200 without ever hitting 429
+    const resAfter = await request(testApp).get('/api/v1/health');
+    expect(resAfter.status).toBe(200);
+    expect(resAfter.body).toEqual({ status: 'ok' });
+  }, 30000);
 });

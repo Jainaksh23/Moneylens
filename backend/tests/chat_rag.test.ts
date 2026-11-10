@@ -23,6 +23,7 @@ import { ChatMessage } from '../src/models/ChatMessage';
 import { env } from '../src/config/env';
 import { chatTools } from '../src/services/chatTools';
 import { chatService } from '../src/services/chatService';
+import { groqService } from '../src/services/groqService';
 
 describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
   const app = createApp();
@@ -553,6 +554,238 @@ describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
       expect(res.body.data.toolsUsed).toContain('getCategorySpend');
       expect(res.body.data.limitations).toContain('Knowledge retrieval is currently unavailable');
       expect(res.body.data.ragStatus).toBe('unavailable');
+    });
+
+    it('should handle slow ML retrieval timeout by falling back to tools-only answer with RAG_UNAVAILABLE notice', async () => {
+      env.GROQ_API_KEY = 'gsk_valid_mock_key';
+      process.env.TEST_RAG_TIMEOUT_MS = '50';
+
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          // Simulate slow ML retrieval exceeding timeout
+          const abortError = new Error('The operation was aborted');
+          abortError.name = 'AbortError';
+          return Promise.reject(abortError);
+        }
+        if (url.includes('/rag/status')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ collection_ready: false, chunk_count: 0 }),
+          } as Response);
+        }
+        if (url.includes('api.groq.com')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              choices: [
+                {
+                  message: {
+                    content:
+                      'Based on your recorded transactions, you spent ₹14,500 on Food in March.',
+                  },
+                },
+              ],
+              usage: { total_tokens: 110 },
+            }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'March mein food pe kitna kharcha hua?' });
+
+      delete process.env.TEST_RAG_TIMEOUT_MS;
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.answer).toContain('14,500');
+      expect(res.body.data.toolsUsed).toContain('getCategorySpend');
+      expect(res.body.data.limitations).toContain('Knowledge retrieval is currently unavailable');
+      expect(res.body.data.ragStatus).toBe('unavailable');
+    });
+
+    it('should probe ML service /rag/status and return status diagnostics safely', async () => {
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/status')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ collection_ready: true, chunk_count: 102 }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const status = await chatService.checkRagStatus('test-probe-req');
+      expect(status).not.toBeNull();
+      expect(status?.collection_ready).toBe(true);
+      expect(status?.chunk_count).toBe(102);
+
+      // Probe failure gracefully returns null without throwing
+      global.fetch = jest.fn().mockImplementation(() => Promise.reject(new Error('Network error')));
+      const failedStatus = await chatService.checkRagStatus('test-fail-probe');
+      expect(failedStatus).toBeNull();
+    });
+
+    it('should return 502 LLM_MODEL_NOT_FOUND when Groq returns 404 (model or endpoint not found)', async () => {
+      env.GROQ_API_KEY = 'gsk_valid_mock_key';
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ chunks: [], isWeakRetrieval: true }),
+          } as Response);
+        }
+        if (url.includes('api.groq.com')) {
+          return Promise.resolve({
+            ok: false,
+            status: 404,
+            json: async () => ({
+              error: {
+                message: 'The model `llama-3.3-70b-versatile` does not exist or you do not have access to it.',
+                type: 'invalid_request_error',
+                code: 'model_not_found',
+              },
+            }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'What is my budget?' });
+
+      expect(res.status).toBe(502);
+      expect(res.body.error.code).toBe('LLM_MODEL_NOT_FOUND');
+      expect(res.body.error.message).toContain('invalid');
+      expect(res.body.requestId).toBeDefined();
+    });
+
+    it('should return 502 LLM_UPSTREAM_ERROR when Groq returns 500/503 server error', async () => {
+      env.GROQ_API_KEY = 'gsk_valid_mock_key';
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ chunks: [], isWeakRetrieval: true }),
+          } as Response);
+        }
+        if (url.includes('api.groq.com')) {
+          return Promise.resolve({
+            ok: false,
+            status: 503,
+            json: async () => ({
+              error: {
+                message: 'Service Unavailable',
+                type: 'server_error',
+              },
+            }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'What is my budget?' });
+
+      expect(res.status).toBe(502);
+      expect(res.body.error.code).toBe('LLM_UPSTREAM_ERROR');
+      expect(res.body.error.message).toContain('error');
+    });
+
+    it('should sanitize surrounding quotes and whitespace from GROQ_API_KEY and GROQ_MODEL', async () => {
+      env.GROQ_API_KEY = '  "gsk_clean_test_key"  ';
+      env.GROQ_MODEL = "  'llama-3.3-70b-versatile'  ";
+
+      let capturedAuthHeader: string | undefined;
+      let capturedBody: any;
+
+      global.fetch = jest.fn().mockImplementation((url: string, opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ chunks: [], isWeakRetrieval: true }),
+          } as Response);
+        }
+        if (url.includes('api.groq.com')) {
+          capturedAuthHeader = opts?.headers?.Authorization;
+          capturedBody = JSON.parse(opts?.body || '{}');
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              choices: [{ message: { content: 'Clean test response' } }],
+              usage: { total_tokens: 50 },
+            }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'Hello assistant' });
+
+      expect(res.status).toBe(200);
+      expect(capturedAuthHeader).toBe('Bearer gsk_clean_test_key');
+      expect(capturedBody.model).toBe('llama-3.3-70b-versatile');
+    });
+
+    it('should verify model availability at startup via /models endpoint', async () => {
+      env.GROQ_API_KEY = 'gsk_valid_mock_key';
+      env.GROQ_MODEL = 'llama-3.3-70b-versatile';
+
+      // 1. Model present in list
+      global.fetch = jest.fn().mockImplementation((url: string) => {
+        if (url.includes('/models')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: [
+                { id: 'llama-3.3-70b-versatile' },
+                { id: 'openai/gpt-oss-20b' },
+              ],
+            }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const available = await groqService.verifyModelAvailability('test-startup-check');
+      expect(available).toBe(true);
+
+      // 2. Model missing in list
+      global.fetch = jest.fn().mockImplementation((url: string) => {
+        if (url.includes('/models')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: [
+                { id: 'openai/gpt-oss-20b' },
+              ],
+            }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const notAvailable = await groqService.verifyModelAvailability('test-startup-check-missing');
+      expect(notAvailable).toBe(false);
     });
   });
 });

@@ -31,3 +31,8 @@ class RetrieveResponse(BaseModel):
     count: int
     isWeakRetrieval: bool
     thresholdApplied: float
+
+
+class RagStatusResponse(BaseModel):
+    collection_ready: bool = Field(..., description="True if ChromaDB collection is initialized and has chunks")
+    chunk_count: int = Field(..., description="Total number of chunks in the collection")

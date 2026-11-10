@@ -19,6 +19,14 @@ class TestRAGService:
         count = rag_service.count()
         assert count > 0, "Collection should contain approved knowledge chunks"
 
+    def test_startup_ingestion_idempotent(self):
+        """Calling ensure_ingested_on_startup repeatedly is idempotent."""
+        initial_count = rag_service.count()
+        assert initial_count > 0
+        second_count = rag_service.ensure_ingested_on_startup()
+        assert second_count == initial_count
+        assert rag_service.count() == initial_count
+
     def test_relevant_retrieval(self):
         """Relevant queries should return chunks with high similarity and correct metadata."""
         res = rag_service.retrieve(query="What is the 50/30/20 budgeting rule?", top_k=3, min_similarity=0.30)
@@ -83,6 +91,29 @@ class TestRAGAPIEndpoint:
         res = client.post(
             "/rag/retrieve",
             json={"query": "test"},
+            headers={"X-Internal-Key": "wrong-key"},
+        )
+        assert res.status_code == 403
+
+    def test_rag_status_success(self):
+        res = client.get(
+            "/rag/status",
+            headers={"X-Internal-Key": INTERNAL_KEY},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert "collection_ready" in data
+        assert "chunk_count" in data
+        assert data["collection_ready"] is True
+        assert data["chunk_count"] > 0
+
+    def test_rag_status_no_auth(self):
+        res = client.get("/rag/status")
+        assert res.status_code in (401, 403)
+
+    def test_rag_status_invalid_key(self):
+        res = client.get(
+            "/rag/status",
             headers={"X-Internal-Key": "wrong-key"},
         )
         assert res.status_code == 403

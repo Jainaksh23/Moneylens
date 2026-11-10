@@ -97,13 +97,17 @@ export class ChatService {
 
   /**
    * Retrieves knowledge chunks from ml-service /rag/retrieve.
+   * Enforces a dedicated timeout budget (about 20s) so it falls back gracefully
+   * to tools-only answers without exhausting the gateway timeout limit.
    */
   private async retrieveKnowledge(
     query: string,
     requestId?: string,
   ): Promise<{ chunks: any[]; isWeak: boolean; ragUnavailable?: boolean }> {
     try {
-      const timeoutMs = process.env.NODE_ENV === 'test' ? 300 : 70_000;
+      const timeoutMs = process.env.NODE_ENV === 'test'
+        ? (Number(process.env.TEST_RAG_TIMEOUT_MS) || 200)
+        : 20_000;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -132,6 +136,7 @@ export class ChatService {
           },
           `RAG retrieval service returned non-2xx status: ${resp.status}`,
         );
+        void this.checkRagStatus(requestId);
         return { chunks: [], isWeak: true, ragUnavailable: true };
       }
 
@@ -146,11 +151,67 @@ export class ChatService {
         {
           requestId,
           errorCode: 'RAG_UNAVAILABLE',
-          error: err?.message,
+          error: err?.name === 'AbortError' ? 'RAG retrieval timed out (20s limit)' : err?.message,
         },
         'RAG retrieval service unreachable or timed out',
       );
+      void this.checkRagStatus(requestId);
       return { chunks: [], isWeak: true, ragUnavailable: true };
+    }
+  }
+
+  /**
+   * Probes ML service /rag/status and logs the diagnostic state in a debug log.
+   * Safe: logs chunk count and boolean readiness only, never secrets or sensitive data.
+   */
+  async checkRagStatus(
+    requestId?: string,
+  ): Promise<{ collection_ready: boolean; chunk_count: number } | null> {
+    try {
+      const timeoutMs = process.env.NODE_ENV === 'test' ? 300 : 5000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const resp = await fetch(`${env.ML_SERVICE_URL}/rag/status`, {
+        method: 'GET',
+        headers: {
+          'X-Internal-Key': env.INTERNAL_API_KEY,
+          'X-Request-Id': requestId || '',
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = (await resp.json()) as { collection_ready: boolean; chunk_count: number };
+        logger.debug(
+          {
+            requestId,
+            collectionReady: data.collection_ready,
+            chunkCount: data.chunk_count,
+          },
+          'ML service /rag/status response',
+        );
+        return data;
+      }
+
+      logger.debug(
+        {
+          requestId,
+          upstreamStatusCode: resp.status,
+        },
+        'ML service /rag/status returned non-2xx',
+      );
+      return null;
+    } catch (err: any) {
+      logger.debug(
+        {
+          requestId,
+          error: err?.message,
+        },
+        'ML service /rag/status probe unreachable or timed out',
+      );
+      return null;
     }
   }
 
@@ -431,10 +492,17 @@ ${userDataContextText.trim() || 'No specific user transactional aggregates reque
       { role: 'user', content: message },
     ];
 
+    // Groq call gets its own timeout budget (about 30s) that starts only AFTER retrieval finishes.
+    // Total request time stays well under the 60s limit of Vercel rewrite & Render proxy.
+    const groqTimeoutMs = process.env.NODE_ENV === 'test'
+      ? (Number(process.env.TEST_GROQ_TIMEOUT_MS) || 500)
+      : 30_000;
+
     // Call Groq LLM
     const completion = await groqService.generateCompletion(messages, {
       temperature: 0.1,
       maxTokens: 800,
+      timeoutMs: groqTimeoutMs,
       requestId,
     });
 

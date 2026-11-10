@@ -7,6 +7,15 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config(); // fallback to current working directory
 
+export const sanitizeEnvString = (val?: string | null): string => {
+  if (val === undefined || val === null) return '';
+  let s = String(val).trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+};
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z
@@ -39,8 +48,14 @@ const envSchema = z.object({
     .min(16, 'INTERNAL_API_KEY must be at least 16 characters')
     .default('moneylens-internal-secret-key-32-chars-dev'),
   GEMINI_API_KEY: z.string().optional(),
-  GROQ_API_KEY: z.string().optional(),
-  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  GROQ_API_KEY: z
+    .string()
+    .optional()
+    .transform((val) => (val !== undefined ? sanitizeEnvString(val) : undefined)),
+  GROQ_MODEL: z
+    .string()
+    .default('llama-3.3-70b-versatile')
+    .transform((val) => sanitizeEnvString(val) || 'llama-3.3-70b-versatile'),
 }).refine(
   (data) => {
     if (data.NODE_ENV === 'production') {

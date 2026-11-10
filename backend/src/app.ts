@@ -29,12 +29,7 @@ export const createApp = (): Express => {
   // 4. Security hardening headers via helmet
   app.use(helmet());
 
-  // 5. General rate limiter (skip in test environment so test suites don't hit limits)
-  if (env.NODE_ENV !== 'test') {
-    app.use(generalLimiter);
-  }
-
-  // 6. CORS configuration — STRICT: no wildcard allowed, credentials required
+  // 5. CORS configuration — STRICT: no wildcard allowed, credentials required
   const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
   app.use(
     cors({
@@ -61,6 +56,15 @@ export const createApp = (): Express => {
       exposedHeaders: ['X-Request-Id'],
     }),
   );
+
+  // 6. Health & Readiness Probes (mounted before rate limiters & body parsing so container probes never 429)
+  app.use('/', healthRouter);
+  app.use('/api/v1', healthRouter);
+
+  // 7. General rate limiter (skip in test environment so test suites don't hit limits)
+  if (env.NODE_ENV !== 'test') {
+    app.use(generalLimiter);
+  }
 
   // 7. Parsers (body size limited to 1mb to prevent payload-based DoS)
   app.use(express.json({ limit: '1mb' }));

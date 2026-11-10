@@ -1,13 +1,42 @@
 import rateLimit from 'express-rate-limit';
 
 /**
+ * Checks if a path is a container health or readiness probe.
+ * Exempt from all rate limiters to guarantee orchestrator uptime checks (e.g. Render 5s pings).
+ */
+export const isHealthPath = (reqPath?: string, originalUrl?: string): boolean => {
+  const check = (p?: string): boolean => {
+    if (!p) return false;
+    const firstSegment = p.toLowerCase().split('?')[0] || '';
+    const normalized = firstSegment.replace(/\/+$/, '');
+    return (
+      normalized === '/health' ||
+      normalized.startsWith('/health/') ||
+      normalized === '/ready' ||
+      normalized.startsWith('/ready/') ||
+      normalized === '/live' ||
+      normalized.startsWith('/live/') ||
+      normalized === '/api/v1/health' ||
+      normalized.startsWith('/api/v1/health/') ||
+      normalized === '/api/v1/ready' ||
+      normalized.startsWith('/api/v1/ready/') ||
+      normalized === '/api/v1/live' ||
+      normalized.startsWith('/api/v1/live/')
+    );
+  };
+  return check(reqPath) || check(originalUrl);
+};
+
+/**
  * General API rate limiter: 100 requests per 15 minutes per IP.
+ * Exempts all health and readiness probes.
  */
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 100,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  skip: (req) => isHealthPath(req.path, req.originalUrl),
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',
@@ -25,6 +54,7 @@ export const loginLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  skip: (req) => isHealthPath(req.path, req.originalUrl),
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',
@@ -42,6 +72,7 @@ export const registerLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  skip: (req) => isHealthPath(req.path, req.originalUrl),
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',
@@ -64,7 +95,7 @@ export const strictLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: (req) => isHealthPath(req.path, req.originalUrl) || process.env.NODE_ENV === 'test',
   message: {
     error: {
       code: 'TOO_MANY_REQUESTS',

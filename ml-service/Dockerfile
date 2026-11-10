@@ -36,6 +36,9 @@ RUN python -c "import chromadb.utils.embedding_functions as ef; fn = ef.DefaultE
 # Copy application source code
 COPY --chown=mluser:mluser . .
 
+# Pre-ingest knowledge base during image build so ChromaDB collection is populated and cached
+RUN python -c "from app.services.rag_service import rag_service; rag_service.ensure_ingested_on_startup()" || true
+
 # Expose FastAPI ML service port
 EXPOSE 8000
 

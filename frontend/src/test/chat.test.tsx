@@ -160,5 +160,68 @@ describe('ChatPage Friendly Error Classification & Diagnostics Tests', () => {
 
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
+
+  it('renders model misconfigured friendly message when error is LLM_MODEL_NOT_FOUND', async () => {
+    vi.mocked(chatService.sendMessage).mockRejectedValueOnce(
+      new ApiClientError(
+        'The configured AI assistant model or endpoint is invalid.',
+        502,
+        'LLM_MODEL_NOT_FOUND',
+      ),
+    );
+
+    render(<ChatPage />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Ask about your spending/i)).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const input = screen.getByPlaceholderText(/Ask about your spending/i);
+    const sendBtn = screen.getByRole('button', { name: /ask/i });
+
+    await user.type(input, 'Check model');
+    await user.click(sendBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Assistant model is misconfigured\. Please check GROQ_MODEL in deployment settings\./i),
+      ).toBeInTheDocument();
+    });
+
+    // Should NOT show retry button for model misconfiguration
+    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it('renders upstream provider error with retry button when error is LLM_UPSTREAM_ERROR', async () => {
+    vi.mocked(chatService.sendMessage).mockRejectedValueOnce(
+      new ApiClientError(
+        'AI assistant upstream service encountered an error.',
+        502,
+        'LLM_UPSTREAM_ERROR',
+      ),
+    );
+
+    render(<ChatPage />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Ask about your spending/i)).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    const input = screen.getByPlaceholderText(/Ask about your spending/i);
+    const sendBtn = screen.getByRole('button', { name: /ask/i });
+
+    await user.type(input, 'Upstream test');
+    await user.click(sendBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Assistant provider encountered an error\. Please retry in a moment\./i),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+  });
 });
 

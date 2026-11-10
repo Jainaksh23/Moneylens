@@ -9,9 +9,9 @@
  * - Fallback synthesizer when GROQ_API_KEY is not set or service is unreachable
  */
 
-import { env } from '../config/env';
-import { logger } from '../utils/logger';
-import { AppError } from '../utils/errors';
+import { env, sanitizeEnvString } from '../config/env.js';
+import { logger } from '../utils/logger.js';
+import { AppError } from '../utils/errors.js';
 
 export interface ChatMessagePayload {
   role: 'system' | 'user' | 'assistant';
@@ -31,11 +31,13 @@ export interface GroqCompletionResponse {
 export class GroqService {
   private apiKey: string | undefined;
   private model: string;
-  private endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+  public readonly baseUrl = 'https://api.groq.com/openai/v1';
+  public readonly chatPath = '/chat/completions';
+  public readonly endpoint = `${this.baseUrl}${this.chatPath}`;
 
   constructor() {
-    this.apiKey = env.GROQ_API_KEY;
-    this.model = env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    this.apiKey = sanitizeEnvString(env.GROQ_API_KEY);
+    this.model = sanitizeEnvString(env.GROQ_MODEL) || 'llama-3.3-70b-versatile';
   }
 
   /**
@@ -53,14 +55,15 @@ export class GroqService {
   ): Promise<GroqCompletionResponse> {
     const temperature = options.temperature ?? 0.1;
     const maxTokens = options.maxTokens ?? 1024;
-    const timeoutMs = options.timeoutMs ?? 15000;
-    const maxRetries = options.maxRetries ?? 2;
+    const timeoutMs = options.timeoutMs ?? 30000;
+    const maxRetries = options.maxRetries ?? 1;
     const requestId = options.requestId || 'unknown';
 
-    // Check API key dynamically (supports test runtime modifications)
-    const apiKey = env.GROQ_API_KEY ?? this.apiKey;
+    // Check and sanitize API key dynamically (supports test runtime modifications)
+    const rawKey = env.GROQ_API_KEY ?? this.apiKey;
+    const apiKey = sanitizeEnvString(rawKey);
 
-    if (!apiKey || apiKey.trim() === '') {
+    if (!apiKey || apiKey === '') {
       logger.error(
         { requestId, errorCode: 'LLM_NOT_CONFIGURED' },
         'GROQ_API_KEY is missing or empty; cannot generate completion',
@@ -72,6 +75,8 @@ export class GroqService {
       );
     }
 
+    const currentModel = sanitizeEnvString(env.GROQ_MODEL ?? this.model) || 'llama-3.3-70b-versatile';
+    const baseUrlHost = new URL(this.baseUrl).host;
     let delay = 500;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -86,7 +91,7 @@ export class GroqService {
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            model: this.model,
+            model: currentModel,
             messages,
             temperature,
             max_tokens: maxTokens,
@@ -98,6 +103,39 @@ export class GroqService {
 
         if (!response.ok) {
           const status = response.status;
+          let errorType: string | undefined;
+          let groqErrorCode: string | undefined;
+
+          try {
+            const errJson = (await response.json()) as any;
+            if (errJson?.error) {
+              errorType = errJson.error.type;
+              groqErrorCode = errJson.error.code;
+            }
+          } catch {
+            // Error response was not JSON
+          }
+
+          // 404: Configured model does not exist or wrong endpoint
+          if (status === 404) {
+            logger.error(
+              {
+                requestId,
+                errorCode: 'LLM_MODEL_NOT_FOUND',
+                upstreamStatusCode: 404,
+                model: currentModel,
+                baseUrlHost,
+                errorType,
+                groqErrorCode,
+              },
+              `Groq model or endpoint not found: ${currentModel}`,
+            );
+            throw new AppError(
+              `The configured AI assistant model or endpoint is invalid (${currentModel}). Please check GROQ_MODEL in deployment settings.`,
+              502,
+              'LLM_MODEL_NOT_FOUND',
+            );
+          }
 
           // 401 / 403: Authentication or authorization failure (do not retry)
           if (status === 401 || status === 403) {
@@ -106,6 +144,9 @@ export class GroqService {
                 requestId,
                 errorCode: 'LLM_AUTH_FAILED',
                 upstreamStatusCode: status,
+                baseUrlHost,
+                errorType,
+                groqErrorCode,
               },
               `Groq API authentication failed with status ${status}`,
             );
@@ -128,6 +169,9 @@ export class GroqService {
                 requestId,
                 errorCode: 'LLM_RATE_LIMITED',
                 upstreamStatusCode: 429,
+                baseUrlHost,
+                errorType,
+                groqErrorCode,
               },
               'Groq API rate limit exceeded (429)',
             );
@@ -145,18 +189,21 @@ export class GroqService {
             continue;
           }
 
-          logger.warn(
+          logger.error(
             {
               requestId,
-              errorCode: 'LLM_TIMEOUT',
+              errorCode: 'LLM_UPSTREAM_ERROR',
               upstreamStatusCode: status,
+              baseUrlHost,
+              errorType,
+              groqErrorCode,
             },
             `Groq API server error status ${status}`,
           );
           throw new AppError(
-            'AI assistant request timed out. The service may be waking up, please retry in a minute.',
-            504,
-            'LLM_TIMEOUT',
+            'AI assistant upstream service encountered an error. Please try again in a moment.',
+            502,
+            'LLM_UPSTREAM_ERROR',
           );
         }
 
@@ -183,17 +230,22 @@ export class GroqService {
       } catch (err: any) {
         clearTimeout(timer);
 
-        // If it's already a classified AppError (e.g. 401/403 or 429), rethrow immediately
+        // If it's already a classified AppError, rethrow immediately
         if (err instanceof AppError) {
           throw err;
         }
 
-        // Handle AbortError / Timeout
-        if (err.name === 'AbortError' || err.message?.toLowerCase().includes('timeout') || err.message?.toLowerCase().includes('abort')) {
+        // Handle AbortError / Timeout strictly
+        if (
+          err.name === 'AbortError' ||
+          err.message?.toLowerCase().includes('timeout') ||
+          err.message?.toLowerCase().includes('abort')
+        ) {
           logger.warn(
             {
               requestId,
               errorCode: 'LLM_TIMEOUT',
+              baseUrlHost,
             },
             'Groq API request timed out (AbortError)',
           );
@@ -204,25 +256,26 @@ export class GroqService {
           );
         }
 
-        // Retry other transient network errors
+        // Retry transient network errors
         if (attempt < maxRetries) {
           await new Promise((r) => setTimeout(r, delay));
           delay *= 2;
           continue;
         }
 
-        logger.warn(
+        logger.error(
           {
             requestId,
-            errorCode: 'LLM_TIMEOUT',
+            errorCode: 'LLM_UPSTREAM_ERROR',
+            baseUrlHost,
             error: err?.message,
           },
-          'Groq API connection failed or timed out after retries',
+          'Groq API connection failed after retries',
         );
         throw new AppError(
-          'AI assistant request timed out. The service may be waking up, please retry in a minute.',
-          504,
-          'LLM_TIMEOUT',
+          'Could not reach AI assistant service. Please check network connection or retry in a moment.',
+          502,
+          'LLM_UPSTREAM_ERROR',
         );
       }
     }
@@ -232,6 +285,78 @@ export class GroqService {
       504,
       'LLM_TIMEOUT',
     );
+  }
+
+  /**
+   * Performs an optional startup self-check:
+   * Calls GET {baseUrl}/models once with the API key and checks whether the configured model is available.
+   * Logs only a boolean and the model name (never secrets or full list).
+   */
+  async verifyModelAvailability(requestId = 'startup-check'): Promise<boolean | null> {
+    const rawKey = env.GROQ_API_KEY ?? this.apiKey;
+    const apiKey = sanitizeEnvString(rawKey);
+    if (!apiKey) {
+      return null;
+    }
+
+    const modelName = sanitizeEnvString(env.GROQ_MODEL ?? this.model) || 'llama-3.3-70b-versatile';
+    const baseUrlHost = new URL(this.baseUrl).host;
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 7000);
+
+      const resp = await fetch(`${this.baseUrl}/models`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (!resp.ok) {
+        logger.warn(
+          {
+            requestId,
+            upstreamStatusCode: resp.status,
+            model: modelName,
+            baseUrlHost,
+          },
+          'Groq startup model check returned non-2xx',
+        );
+        return null;
+      }
+
+      const data = (await resp.json()) as { data?: Array<{ id: string }> };
+      const modelList = Array.isArray(data?.data) ? data.data.map((m) => m.id) : [];
+      const modelAvailable = modelList.includes(modelName);
+
+      logger.info(
+        {
+          requestId,
+          model: modelName,
+          baseUrlHost,
+          modelAvailable,
+        },
+        modelAvailable
+          ? `Configured Groq model '${modelName}' is verified available`
+          : `Warning: Configured Groq model '${modelName}' was not found in available models list`,
+      );
+
+      return modelAvailable;
+    } catch (err: any) {
+      logger.warn(
+        {
+          requestId,
+          error: err?.message,
+          model: modelName,
+          baseUrlHost,
+        },
+        'Groq startup model check request failed or timed out',
+      );
+      return null;
+    }
   }
 }
 
