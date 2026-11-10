@@ -14,6 +14,7 @@ Covers:
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.config import settings
 from app.main import app
 from app.services.goal_scorer import (
     classify_band,
@@ -23,7 +24,7 @@ from app.services.goal_scorer import (
     score_goal,
 )
 
-INTERNAL_KEY = "moneylens-internal-secret-key-32-chars-dev"
+INTERNAL_KEY = settings.internal_api_key
 
 
 # ──────────────────────────── Unit Tests ────────────────────────────

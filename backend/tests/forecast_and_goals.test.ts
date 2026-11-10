@@ -55,7 +55,7 @@ describe('Phase 5: Cash-Flow Forecast & Goals Domain Integration Tests', () => {
       expect(res.status).toBe(401);
     });
 
-    it('should return available: false when user has no transaction history', async () => {
+    it('should return available: false with status insufficient_data when user has no transaction history', async () => {
       const res = await request(app)
         .get('/api/v1/forecast')
         .set(csrfHeader)
@@ -63,80 +63,84 @@ describe('Phase 5: Cash-Flow Forecast & Goals Domain Integration Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.available).toBe(false);
+      expect(res.body.status).toBe('insufficient_data');
       expect(res.body.reason).toContain('No transaction data available');
       expect(res.body.monthlyTrend).toEqual([]);
     });
 
-    it('should return ML-powered forecast when user has transactions and ML is UP', async () => {
-      // Seed some transactions for User Alpha across 4 months
-      await Transaction.create([
-        {
-          userId: userAId,
-          date: new Date('2026-01-15'),
-          amount: 50000,
-          direction: 'income',
-          description: 'Salary Jan',
-          merchant: 'Employer',
-          category: 'Income',
-          categorySource: 'user',
-          source: 'manual',
-          fingerprint: 'fp-1-jan',
-        },
-        {
-          userId: userAId,
-          date: new Date('2026-01-20'),
-          amount: 20000,
-          direction: 'expense',
-          description: 'Rent Jan',
-          merchant: 'Landlord',
-          category: 'Housing',
-          categorySource: 'user',
-          source: 'manual',
-          fingerprint: 'fp-2-jan',
-        },
-        {
-          userId: userAId,
-          date: new Date('2026-02-15'),
-          amount: 55000,
-          direction: 'income',
-          description: 'Salary Feb',
-          merchant: 'Employer',
-          category: 'Income',
-          categorySource: 'user',
-          source: 'manual',
-          fingerprint: 'fp-3-feb',
-        },
-        {
-          userId: userAId,
-          date: new Date('2026-02-22'),
-          amount: 25000,
-          direction: 'expense',
-          description: 'Rent Feb',
-          merchant: 'Landlord',
-          category: 'Housing',
-          categorySource: 'user',
-          source: 'manual',
-          fingerprint: 'fp-4-feb',
-        },
-      ]);
+    it('should return insufficient_data when history is less than 14 days', async () => {
+      // 5 days of transactions (Jan 1 to Jan 5)
+      const txs = [1, 2, 3, 4, 5].map((d) => ({
+        userId: userAId,
+        date: new Date(`2026-01-0${d}`),
+        amount: 1000,
+        direction: 'expense' as const,
+        description: `Tx Day ${d}`,
+        merchant: 'Store',
+        category: 'Food',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-short-${d}`,
+      }));
+      await Transaction.create(txs);
 
-      // Mock ML service forecast response
-      global.fetch = jest.fn().mockImplementation((url: string) => {
+      const res = await request(app)
+        .get('/api/v1/forecast')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.available).toBe(false);
+      expect(res.body.status).toBe('insufficient_data');
+      expect(res.body.reason).toContain('Need at least 14 days of transaction history');
+      expect(res.body.dataCoverage.days).toBe(5);
+      expect(res.body.dataCoverage.minDaysRequired).toBe(14);
+    });
+
+    it('should route synthetic 20-day series (<2 months) to short_history mode with sane ranges and no leakage', async () => {
+      // 20 days of transactions (Jan 1 to Jan 20)
+      const txs = Array.from({ length: 20 }, (_, i) => ({
+        userId: userAId,
+        date: new Date(2026, 0, i + 1),
+        amount: (i + 1) * 200,
+        direction: i % 5 === 0 ? ('income' as const) : ('expense' as const),
+        description: `Tx ${i + 1}`,
+        merchant: 'Merchant',
+        category: i % 5 === 0 ? 'Income' : 'Living',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-20d-${i + 1}`,
+      }));
+      await Transaction.create(txs);
+
+      let capturedPayload: any = null;
+      global.fetch = jest.fn().mockImplementation((url: string, opts: any) => {
         if (url.includes('/forecast')) {
+          capturedPayload = JSON.parse(opts.body);
           return Promise.resolve({
             ok: true,
             status: 200,
             json: async () => ({
-              values: [
-                { month: '2026-03', value: 30000, lower: 25000, upper: 35000 },
-                { month: '2026-04', value: 30000, lower: 23000, upper: 37000 },
-                { month: '2026-05', value: 30000, lower: 21000, upper: 39000 },
-              ],
-              horizon: 3,
-              dataCoverage: { dataPoints: 2, monthsSpan: 2 },
-              modelUsed: 'rolling_mean',
+              available: true,
+              mode: 'short_history',
+              status: 'ok',
+              confidence: 'low',
+              dataCoverage: { firstDate: '2026-01-01', lastDate: '2026-01-20', days: 20 },
+              modelUsed: 'short_history_run_rate',
               modelVersion: '1.0.0',
-              warnings: ['Only 2 months of history.'],
+              values: [
+                { month: '2026-02', value: 5000, lower: 3000, upper: 7000 },
+                { month: '2026-03', value: 5000, lower: 2500, upper: 7500 },
+                { month: '2026-04', value: 5000, lower: 2000, upper: 8000 },
+              ],
+              dailyValues: [
+                { date: '2026-01-21', value: 166.6, lower: 100, upper: 233.3 },
+                { date: '2026-01-22', value: 166.6, lower: 100, upper: 233.3 },
+              ],
+              assumptions: ['Spending continues at observed daily run-rate.'],
+              limitations: ['Based on only 20 days of data.'],
+              warnings: [],
+              evaluation: 'No backtest metric available for short-history mode.',
             }),
           });
         }
@@ -150,31 +154,241 @@ describe('Phase 5: Cash-Flow Forecast & Goals Domain Integration Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.available).toBe(true);
-      expect(res.body.forecast).toBeDefined();
-      expect(res.body.forecast.modelUsed).toBe('rolling_mean');
-      expect(res.body.forecast.values).toHaveLength(3);
-      expect(res.body.monthlyTrend.length).toBeGreaterThanOrEqual(2);
+      expect(res.body.status).toBe('ok');
+      expect(capturedPayload.mode).toBe('short_history');
+      expect(capturedPayload.dailySeries).toBeDefined();
+      expect(capturedPayload.dailySeries.length).toBe(20);
+
+      const f = res.body.forecast;
+      expect(f.mode).toBe('short_history');
+      expect(f.confidence).toBe('low');
+      expect(f.dataCoverage.days).toBe(20);
+
+      // Sane ranges: lower <= value <= upper
+      for (const val of f.values) {
+        expect(val.lower).toBeLessThanOrEqual(val.value);
+        expect(val.value).toBeLessThanOrEqual(val.upper);
+      }
+      for (const d of f.dailyValues) {
+        expect(d.lower).toBeLessThanOrEqual(d.value);
+        expect(d.value).toBeLessThanOrEqual(d.upper);
+        expect(d.date > '2026-01-20').toBe(true); // no leakage into past
+      }
     });
 
-    it('should return available: false without fabricating numbers when ML service is DOWN', async () => {
-      // Seed transactions
-      await Transaction.create([
+    it('should route synthetic 35-day series (<2 months) to short_history with 6M horizon mapping', async () => {
+      // 35 days (Jan 1 to Feb 4)
+      const txs = Array.from({ length: 35 }, (_, i) => ({
+        userId: userAId,
+        date: new Date(2026, 0, i + 1),
+        amount: 500,
+        direction: 'expense' as const,
+        description: `Tx 35-${i + 1}`,
+        merchant: 'Vendor',
+        category: 'Food',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-35d-${i + 1}`,
+      }));
+      await Transaction.create(txs);
+
+      let capturedPayload: any = null;
+      global.fetch = jest.fn().mockImplementation((url: string, opts: any) => {
+        if (url.includes('/forecast')) {
+          capturedPayload = JSON.parse(opts.body);
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              available: true,
+              mode: 'short_history',
+              status: 'ok',
+              confidence: 'low',
+              dataCoverage: { firstDate: '2026-01-01', lastDate: '2026-02-04', days: 35 },
+              modelUsed: 'short_history_run_rate',
+              modelVersion: '1.0.0',
+              values: Array.from({ length: 6 }, (_, idx) => ({
+                month: `2026-0${idx + 3}`,
+                value: -15000,
+                lower: -20000,
+                upper: -10000,
+              })),
+              assumptions: ['Run rate assumption.'],
+              limitations: ['Short history.'],
+              warnings: ['Projecting 180 days (6 months) from short-history carries high uncertainty.'],
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .get('/api/v1/forecast?horizon=6')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(capturedPayload.mode).toBe('short_history');
+      expect(capturedPayload.horizon).toBe(6);
+      expect(capturedPayload.horizonDays).toBe(180);
+      expect(res.body.forecast.warnings[0]).toContain('180 days');
+    });
+
+    it('should route synthetic 3-month series (2-5 months) to monthly_baseline with wide ranges', async () => {
+      // 3 months of transactions (Jan, Feb, Mar)
+      const txs = [
+        { date: '2026-01-10', amount: 40000, direction: 'income' as const },
+        { date: '2026-01-20', amount: 20000, direction: 'expense' as const },
+        { date: '2026-02-10', amount: 45000, direction: 'income' as const },
+        { date: '2026-02-20', amount: 22000, direction: 'expense' as const },
+        { date: '2026-03-10', amount: 42000, direction: 'income' as const },
+        { date: '2026-03-25', amount: 21000, direction: 'expense' as const },
+      ].map((t, idx) => ({
+        userId: userAId,
+        date: new Date(t.date),
+        amount: t.amount,
+        direction: t.direction,
+        description: `Tx 3m ${idx}`,
+        merchant: 'Org',
+        category: t.direction === 'income' ? 'Income' : 'Bills',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-3m-${idx}`,
+      }));
+      await Transaction.create(txs);
+
+      let capturedPayload: any = null;
+      global.fetch = jest.fn().mockImplementation((url: string, opts: any) => {
+        if (url.includes('/forecast')) {
+          capturedPayload = JSON.parse(opts.body);
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              available: true,
+              mode: 'monthly_baseline',
+              status: 'ok',
+              confidence: 'medium',
+              dataCoverage: 3,
+              modelUsed: 'rolling_mean',
+              modelVersion: '1.0.0',
+              values: [
+                { month: '2026-04', value: 21000, lower: 15000, upper: 27000 },
+                { month: '2026-05', value: 21000, lower: 13000, upper: 29000 },
+                { month: '2026-06', value: 21000, lower: 11000, upper: 31000 },
+              ],
+              assumptions: ['Prediction interval widened by 2.5x standard error due to 2-5 months history.'],
+              limitations: ['Limited history.'],
+              warnings: ['Only 3 months of history.'],
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .get('/api/v1/forecast?horizon=3')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(capturedPayload.mode).toBe('monthly_baseline');
+      expect(capturedPayload.series).toHaveLength(3);
+      expect(res.body.forecast.mode).toBe('monthly_baseline');
+      for (const val of res.body.forecast.values) {
+        expect(val.lower).toBeLessThanOrEqual(val.value);
+        expect(val.value).toBeLessThanOrEqual(val.upper);
+      }
+    });
+
+    it('should route synthetic 8-month series (>=6 months) to monthly_standard mode', async () => {
+      // 8 months of transactions
+      const txs = Array.from({ length: 8 }, (_, m) => [
         {
           userId: userAId,
-          date: new Date('2026-01-15'),
-          amount: 40000,
-          direction: 'income',
-          description: 'Salary',
+          date: new Date(2025, m, 10),
+          amount: 50000,
+          direction: 'income' as const,
+          description: `Salary ${m + 1}`,
           merchant: 'Employer',
           category: 'Income',
-          categorySource: 'user',
-          source: 'manual',
-          fingerprint: 'fp-down-1',
+          categorySource: 'user' as const,
+          source: 'manual' as const,
+          fingerprint: `fp-8m-inc-${m}`,
         },
-      ]);
+        {
+          userId: userAId,
+          date: new Date(2025, m, 20),
+          amount: 30000,
+          direction: 'expense' as const,
+          description: `Bills ${m + 1}`,
+          merchant: 'Landlord',
+          category: 'Housing',
+          categorySource: 'user' as const,
+          source: 'manual' as const,
+          fingerprint: `fp-8m-exp-${m}`,
+        },
+      ]).flat();
+      await Transaction.create(txs);
 
-      // Mock ML service down
-      global.fetch = jest.fn().mockRejectedValue(new Error('Connection refused'));
+      let capturedPayload: any = null;
+      global.fetch = jest.fn().mockImplementation((url: string, opts: any) => {
+        if (url.includes('/forecast')) {
+          capturedPayload = JSON.parse(opts.body);
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              available: true,
+              mode: 'monthly_standard',
+              status: 'ok',
+              confidence: 'medium',
+              dataCoverage: 8,
+              modelUsed: 'rolling_mean',
+              modelVersion: '1.0.0',
+              values: [
+                { month: '2025-09', value: 20000, lower: 18000, upper: 22000 },
+                { month: '2025-10', value: 20000, lower: 17500, upper: 22500 },
+                { month: '2025-11', value: 20000, lower: 17000, upper: 23000 },
+              ],
+              assumptions: ['Holdout backtest validated.'],
+              limitations: [],
+              warnings: [],
+            }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .get('/api/v1/forecast?horizon=3')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(capturedPayload.mode).toBe('monthly_standard');
+      expect(capturedPayload.series).toHaveLength(8);
+      expect(res.body.forecast.mode).toBe('monthly_standard');
+    });
+
+    it('should return status: ml_unavailable with retryable: true when ML service is DOWN or wakes up', async () => {
+      // 20 days of transactions (enough for forecast)
+      const txs = Array.from({ length: 20 }, (_, i) => ({
+        userId: userAId,
+        date: new Date(2026, 0, i + 1),
+        amount: 1000,
+        direction: 'expense' as const,
+        description: `Tx ${i + 1}`,
+        merchant: 'Vendor',
+        category: 'Food',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-down-${i + 1}`,
+      }));
+      await Transaction.create(txs);
+
+      // Mock fetch failure
+      global.fetch = jest.fn().mockRejectedValue(new Error('Connection refused (ML sleeping)'));
 
       const res = await request(app)
         .get('/api/v1/forecast')
@@ -183,8 +397,84 @@ describe('Phase 5: Cash-Flow Forecast & Goals Domain Integration Tests', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.available).toBe(false);
-      expect(res.body.reason).toContain('temporarily unavailable');
-      expect(res.body.forecast).toBeUndefined(); // NEVER fabricated
+      expect(res.body.status).toBe('ml_unavailable');
+      expect(res.body.retryable).toBe(true);
+      expect(res.body.reason).toContain('Forecast service is waking up, please retry in a minute');
+      expect(res.body.forecast).toBeUndefined(); // Never fabricated
+    });
+
+    it('should return status: generation_failed with retryable: false when ML service returns 4xx', async () => {
+      // 20 days of transactions
+      const txs = Array.from({ length: 20 }, (_, i) => ({
+        userId: userAId,
+        date: new Date(2026, 0, i + 1),
+        amount: 1000,
+        direction: 'expense' as const,
+        description: `Tx ${i + 1}`,
+        merchant: 'Vendor',
+        category: 'Food',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-4xx-${i + 1}`,
+      }));
+      await Transaction.create(txs);
+
+      // Mock 422 Unprocessable Entity
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: async () => ({ detail: 'Invalid parameters in forecast series' }),
+      });
+
+      const res = await request(app)
+        .get('/api/v1/forecast')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.available).toBe(false);
+      expect(res.body.status).toBe('generation_failed');
+      expect(res.body.retryable).toBe(false);
+      expect(res.body.reason).toBe('Could not generate forecast');
+    });
+
+    it('should verify ML-down and insufficient-data states are distinct and different', async () => {
+      // 1. User Beta has 0 transactions -> insufficient_data
+      const resBeta = await request(app)
+        .get('/api/v1/forecast')
+        .set(csrfHeader)
+        .set('Cookie', [userBCookie]);
+
+      expect(resBeta.body.available).toBe(false);
+      expect(resBeta.body.status).toBe('insufficient_data');
+      expect(resBeta.body.status).not.toBe('ml_unavailable');
+
+      // 2. User Alpha has 20 days -> triggers ML, which times out -> ml_unavailable
+      const txs = Array.from({ length: 20 }, (_, i) => ({
+        userId: userAId,
+        date: new Date(2026, 0, i + 1),
+        amount: 1000,
+        direction: 'expense' as const,
+        description: `Tx ${i + 1}`,
+        merchant: 'Vendor',
+        category: 'Food',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-distinct-${i + 1}`,
+      }));
+      await Transaction.create(txs);
+
+      global.fetch = jest.fn().mockRejectedValue(new Error('Timeout'));
+
+      const resAlpha = await request(app)
+        .get('/api/v1/forecast')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(resAlpha.body.available).toBe(false);
+      expect(resAlpha.body.status).toBe('ml_unavailable');
+      expect(resAlpha.body.status).not.toBe(resBeta.body.status);
+      expect(resAlpha.body.reason).not.toBe(resBeta.body.reason);
     });
   });
 

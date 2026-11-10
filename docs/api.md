@@ -309,32 +309,57 @@ This document provides complete documentation for the MoneyLens REST API (`/api/
 ## 6. Forecasting
 
 ### `GET /api/v1/forecast?horizon=3`
-- **Description**: Generates statistical time-series cash-flow forecasts with confidence bounds.
-- **Response `200 OK`**:
+- **Description**: Generates statistical cash-flow forecasts with confidence intervals, selected adaptively by history length with distinct error classification.
+- **Mode Selection by History**:
+  - `< 2 months` (including 1 month, >= 14 days): `mode="short_history"`, daily run-rate extrapolation with variation bounds, no Prophet, no fabricated backtest metrics.
+  - `2–5 months`: `mode="monthly_baseline"` with widened confidence intervals (±2.5× std).
+  - `>= 6 months`: `mode="monthly_standard"`, rolling-mean vs last-value vs Prophet with sequential time-based holdout evaluation.
+- **Error States & Graceful Degradation**:
+  - `status: "ml_unavailable"`: ML service cold-start / timeout; UI displays waking up message with retry button (`retryable: true`).
+  - `status: "generation_failed"`: ML service 4xx response; UI displays generation failed message (`retryable: false`).
+  - `status: "insufficient_data"`: Fewer than 14 days of history; UI displays exact days available vs 14 minimum required.
+- **Response `200 OK` (Short-History Mode)**:
 ```json
 {
-  "modelUsed": "Rolling Mean (3-Month Window)",
-  "horizon": 3,
-  "historicalMonthsCount": 15,
-  "predictions": [
-    {
-      "month": "2026-04",
-      "predictedAmount": 32500,
-      "lowerBound": 28100,
-      "upperBound": 36900
+  "available": true,
+  "status": "ok",
+  "forecast": {
+    "available": true,
+    "mode": "short_history",
+    "confidence": "low",
+    "modelUsed": "short_history_run_rate",
+    "modelVersion": "1.0.0",
+    "horizon": 3,
+    "dataCoverage": {
+      "firstDate": "2026-01-01",
+      "lastDate": "2026-01-25",
+      "days": 25
     },
-    {
-      "month": "2026-05",
-      "predictedAmount": 32500,
-      "lowerBound": 27500,
-      "upperBound": 37500
+    "values": [
+      { "month": "2026-02", "value": 12000, "lower": 9000, "upper": 15000 },
+      { "month": "2026-03", "value": 12000, "lower": 8000, "upper": 16000 },
+      { "month": "2026-04", "value": 12000, "lower": 7000, "upper": 17000 }
+    ],
+    "runRateDaily": {
+      "avgDailyIncome": 1500,
+      "avgDailyExpense": 1100,
+      "avgDailyNet": 400
     },
-    {
-      "month": "2026-06",
-      "predictedAmount": 32500,
-      "lowerBound": 26900,
-      "upperBound": 38100
-    }
+    "assumptions": [
+      "Assumes spending continues at observed daily run-rate.",
+      "One-off large items are not treated specially."
+    ],
+    "limitations": [
+      "Based on only 25 days of data; seasonal cycles cannot be inferred."
+    ],
+    "warnings": [],
+    "evaluation": "No backtest metric available for short-history mode."
+  },
+  "monthlyTrend": [
+    { "month": "2026-01", "income": 37500, "expense": 27500, "net": 10000, "savingsRate": 26.7 }
+  ],
+  "dailyHistory": [
+    { "date": "2026-01-01", "income": 1500, "expense": 800, "net": 700 }
   ]
 }
 ```

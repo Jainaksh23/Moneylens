@@ -4,10 +4,11 @@ Tests for RAG Knowledge Base and Retrieval Service in ml-service.
 
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.main import app
 from app.services.rag_service import rag_service
 
-INTERNAL_KEY = "moneylens-internal-secret-key-32-chars-dev"
+INTERNAL_KEY = settings.internal_api_key
 client = TestClient(app)
 
 
