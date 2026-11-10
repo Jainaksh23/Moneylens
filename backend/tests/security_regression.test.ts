@@ -341,10 +341,21 @@ describe('Security Regression & Adversarial Hardening Suite', () => {
         .set('x-requested-with', 'moneylens')
         .attach('file', corruptCsv, 'missing_cols.csv');
 
-      expect(res.status).toBe(200);
-      // Validates that counts.rejected reflects missing column errors
-      expect(res.body.counts.accepted).toBe(0);
-      expect(res.body.counts.rejected).toBeGreaterThanOrEqual(1);
+      // Reject non-transaction table CSV with clear 400 error
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toMatch(/Could not find the transaction table/i);
+
+      // Verify that CSV with valid header but invalid row values returns 200 preview with rejected count
+      const validHeaderBrokenRowsCsv = Buffer.from('date,description,amount\n2026-01-01,Test,\n');
+      const previewRes = await request(app)
+        .post('/api/v1/transactions/import')
+        .set('Cookie', userAlphaCookie)
+        .set('x-requested-with', 'moneylens')
+        .attach('file', validHeaderBrokenRowsCsv, 'broken_rows.csv');
+
+      expect(previewRes.status).toBe(200);
+      expect(previewRes.body.counts.accepted).toBe(0);
+      expect(previewRes.body.counts.rejected).toBeGreaterThanOrEqual(1);
     });
   });
 

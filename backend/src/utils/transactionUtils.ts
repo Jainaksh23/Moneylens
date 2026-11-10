@@ -29,6 +29,13 @@ export interface NormalizedFinancials {
   amount: number;
 }
 
+const MONTH_NAMES: Record<string, number> = {
+  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+  january: 1, february: 2, march: 3, april: 4, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+};
+
 /**
  * Normalizes direction and amount once to prevent double-negation bugs.
  * Amount is guaranteed to be a positive number (> 0).
@@ -37,7 +44,26 @@ export const normalizeDirectionAndAmount = (
   rawType: string,
   rawAmount: number | string,
 ): NormalizedFinancials => {
-  const parsedAmt = typeof rawAmount === 'number' ? rawAmount : parseFloat(String(rawAmount).replace(/[₹,\s]/g, ''));
+  const amtStr = typeof rawAmount === 'number' ? String(rawAmount) : String(rawAmount || '');
+  let inferredType = (rawType || '').trim().toLowerCase();
+
+  // If type was not explicitly given, check for Dr/Cr indicators inside the amount string
+  if (!inferredType && typeof rawAmount === 'string') {
+    if (/\b(dr|debit)\b/i.test(amtStr) || /\(dr\)/i.test(amtStr)) {
+      inferredType = 'debit';
+    } else if (/\b(cr|credit)\b/i.test(amtStr) || /\(cr\)/i.test(amtStr)) {
+      inferredType = 'credit';
+    }
+  }
+
+  // Clean currency symbols, commas, whitespace, Dr/Cr suffix, and wrapping parens
+  const cleanNumeric = amtStr
+    .replace(/[₹,\s]/g, '')
+    .replace(/\b(dr|cr|debit|credit)\b/gi, '')
+    .replace(/[()]/g, '')
+    .trim();
+
+  const parsedAmt = parseFloat(cleanNumeric);
 
   if (isNaN(parsedAmt) || !isFinite(parsedAmt)) {
     throw new Error(`Invalid numeric amount: ${rawAmount}`);
@@ -48,20 +74,20 @@ export const normalizeDirectionAndAmount = (
     throw new Error('Transaction amount must be strictly greater than zero');
   }
 
-  const typeStr = (rawType || '').trim().toLowerCase();
+  const typeStr = inferredType.replace(/[^a-z]/g, '');
 
   // If rawType indicates expense/debit
-  if (['debit', 'expense', 'dr', 'outflow'].includes(typeStr)) {
+  if (['debit', 'expense', 'dr', 'd', 'outflow', 'withdrawal'].includes(typeStr)) {
     return { direction: 'expense', amount: Number(positiveAmount.toFixed(2)) };
   }
 
   // If rawType indicates income/credit
-  if (['credit', 'income', 'cr', 'inflow', 'salary'].includes(typeStr)) {
+  if (['credit', 'income', 'cr', 'c', 'inflow', 'deposit', 'salary'].includes(typeStr)) {
     return { direction: 'income', amount: Number(positiveAmount.toFixed(2)) };
   }
 
   // Fallback: If type was missing or ambiguous, infer from original sign
-  if (parsedAmt < 0) {
+  if (parsedAmt < 0 || amtStr.trim().startsWith('-')) {
     return { direction: 'expense', amount: Number(positiveAmount.toFixed(2)) };
   }
 
@@ -71,7 +97,7 @@ export const normalizeDirectionAndAmount = (
 };
 
 /**
- * Parses a date string in YYYY-MM-DD or DD/MM/YYYY format with Asia/Kolkata timezone (+05:30).
+ * Parses a date string in YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, or DD-Mon-YYYY format with Asia/Kolkata timezone (+05:30).
  * Prevents UTC timezone drift where 2026-10-14 becomes 2026-10-13 in UTC.
  */
 export const parseKolkataDate = (dateStr: string): Date => {
@@ -84,22 +110,36 @@ export const parseKolkataDate = (dateStr: string): Date => {
   let month: number; // 1-12
   let day: number;
 
+  // Strip trailing time portion if present (e.g. "01/01/2026 14:32:00" -> "01/01/2026")
+  const dateOnly = trimmed.split(/\s{2,}|\s(?=\d{1,2}:)/)[0]!.split(/\s+/)[0]!;
+
   // Pattern 1: YYYY-MM-DD
-  const isoMatch = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(trimmed);
+  const isoMatch = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(dateOnly);
   // Pattern 2: DD/MM/YYYY or DD-MM-YYYY
-  const indianMatch = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(trimmed);
+  const indianNumericMatch = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(dateOnly);
+  // Pattern 3: DD-Mon-YYYY or DD Mon YYYY
+  const textDatePart = trimmed.split(/\s{2,}|\s(?=\d{1,2}:)/)[0]!;
+  const indianNamedMatch = /^(\d{1,2})[-/. ]([A-Za-z]{3,9})[-/. ](\d{4})$/.exec(textDatePart);
 
   if (isoMatch) {
     year = parseInt(isoMatch[1]!, 10);
     month = parseInt(isoMatch[2]!, 10);
     day = parseInt(isoMatch[3]!, 10);
-  } else if (indianMatch) {
-    day = parseInt(indianMatch[1]!, 10);
-    month = parseInt(indianMatch[2]!, 10);
-    year = parseInt(indianMatch[3]!, 10);
+  } else if (indianNumericMatch) {
+    day = parseInt(indianNumericMatch[1]!, 10);
+    month = parseInt(indianNumericMatch[2]!, 10);
+    year = parseInt(indianNumericMatch[3]!, 10);
+  } else if (indianNamedMatch) {
+    day = parseInt(indianNamedMatch[1]!, 10);
+    const mStr = indianNamedMatch[2]!.toLowerCase();
+    month = MONTH_NAMES[mStr] || 0;
+    year = parseInt(indianNamedMatch[3]!, 10);
+    if (!month) {
+      throw new Error(`Invalid month name "${indianNamedMatch[2]}" in date: "${dateStr}"`);
+    }
   } else {
     throw new Error(
-      `Invalid date format: "${dateStr}". Supported formats are YYYY-MM-DD or DD/MM/YYYY`,
+      `Invalid date format: "${dateStr}". Supported formats are DD/MM/YYYY, DD-MM-YYYY, DD-Mon-YYYY, or YYYY-MM-DD`,
     );
   }
 

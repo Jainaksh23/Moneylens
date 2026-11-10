@@ -1,11 +1,10 @@
-import { parse } from 'csv-parse/sync';
 import {
   parseKolkataDate,
-  normalizeDirectionAndAmount,
   normalizeMerchant,
   computeFingerprint,
 } from '../utils/transactionUtils.js';
 import { ruleBasedCategorize } from '../utils/categorizer.js';
+import { parseCsvStatement } from '../utils/csvStatementParser.js';
 import { ImportJob, ImportErrorItem, ImportCandidate } from '../models/ImportJob.js';
 import { Transaction } from '../models/Transaction.js';
 import { BadRequestError, NotFoundError } from '../utils/errors.js';
@@ -40,103 +39,34 @@ export const importService = {
       return await importService.processPdfPreview(userId, filename, fileBuffer);
     }
 
-    let records: Record<string, string>[];
-    try {
-      records = parse(fileBuffer, {
-        columns: (header: string[]) =>
-          header.map((col) => col.trim().toLowerCase().replace(/[\s_-]+/g, '')),
-        skip_empty_lines: true,
-        trim: true,
-        bom: true, // Handle UTF-8 BOM if exported from Excel
-      });
-    } catch (parseErr) {
-      throw new BadRequestError(
-        `Failed to parse CSV file: ${parseErr instanceof Error ? parseErr.message : 'Malformed CSV'}`,
-      );
-    }
+    const parsedCsv = parseCsvStatement(fileBuffer);
 
-    if (!records || records.length === 0) {
-      throw new BadRequestError('The uploaded CSV file contains no data rows.');
-    }
+    const errors: ImportErrorItem[] = parsedCsv.errors.map((e) => ({
+      row: e.row,
+      message: e.message,
+      raw: e.raw,
+    }));
 
-    const errors: ImportErrorItem[] = [];
     const candidates: ImportCandidate[] = [];
     const seenFingerprintsInFile = new Set<string>();
 
-    for (let i = 0; i < records.length; i++) {
-      const row = records[i]!;
-      const rowNum = i + 2; // Row 1 is header
+    for (const tx of parsedCsv.transactions) {
+      const merchant = normalizeMerchant(tx.merchant);
 
-      // Extract columns with case/whitespace-tolerant fallbacks
-      const rawDate = row['date'] || row['transactiondate'] || row['txdate'];
-      const rawDesc = row['description'] || row['desc'] || row['narration'] || row['particulars'];
-      const rawAmt = row['amount'] || row['amt'] || row['value'];
-      const rawType = row['type'] || row['direction'] || row['crdror'] || row['trxtype'];
-      const rawMerchant = row['merchant'] || row['vendor'] || row['payee'];
-      const rawCategory = row['category'];
-
-      // Validation 1: Date
-      if (!rawDate) {
-        errors.push({ row: rowNum, message: 'Missing "date" column value', raw: JSON.stringify(row) });
-        continue;
-      }
-
-      let parsedDate: Date;
-      try {
-        parsedDate = parseKolkataDate(rawDate);
-      } catch (dateErr) {
-        errors.push({
-          row: rowNum,
-          message: dateErr instanceof Error ? dateErr.message : 'Invalid date',
-          raw: JSON.stringify(row),
-        });
-        continue;
-      }
-
-      // Validation 2: Description
-      if (!rawDesc || rawDesc.trim().length === 0) {
-        errors.push({ row: rowNum, message: 'Missing "description" column value', raw: JSON.stringify(row) });
-        continue;
-      }
-
-      // Validation 3: Amount & Direction
-      if (rawAmt === undefined || rawAmt === null || String(rawAmt).trim() === '') {
-        errors.push({ row: rowNum, message: 'Missing "amount" column value', raw: JSON.stringify(row) });
-        continue;
-      }
-
-      let financials: { direction: 'income' | 'expense'; amount: number };
-      try {
-        financials = normalizeDirectionAndAmount(rawType || '', rawAmt);
-      } catch (amtErr) {
-        errors.push({
-          row: rowNum,
-          message: amtErr instanceof Error ? amtErr.message : 'Invalid amount or type',
-          raw: JSON.stringify(row),
-        });
-        continue;
-      }
-
-      // Normalization: Merchant
-      const merchant = normalizeMerchant(rawMerchant);
-
-      // Normalization & Inference: Category
       let category = 'unknown';
       let categorySource: 'model' | 'user' | 'rule' | 'unknown' = 'unknown';
 
-      if (rawCategory && rawCategory.trim().length > 0) {
-        category = rawCategory.trim();
+      if (tx.category && tx.category.trim().length > 0) {
+        category = tx.category.trim();
         categorySource = 'user';
       } else {
-        const ruleRes = ruleBasedCategorize(merchant, rawDesc.trim());
+        const ruleRes = ruleBasedCategorize(merchant, tx.description);
         category = ruleRes.category;
         categorySource = ruleRes.source;
       }
 
-      // Fingerprint computation
-      const fingerprint = computeFingerprint(userId, parsedDate, financials.amount, merchant);
+      const fingerprint = computeFingerprint(userId, tx.date, tx.amount, merchant);
 
-      // Check intra-file duplicate
       let isDuplicate = false;
       if (seenFingerprintsInFile.has(fingerprint)) {
         isDuplicate = true;
@@ -145,12 +75,12 @@ export const importService = {
       }
 
       candidates.push({
-        date: parsedDate,
-        amount: financials.amount,
+        date: tx.date,
+        amount: tx.amount,
         currency: 'INR',
-        direction: financials.direction,
+        direction: tx.direction,
         merchant,
-        description: rawDesc.trim(),
+        description: tx.description,
         category,
         categorySource,
         source: 'csv',
@@ -205,7 +135,7 @@ export const importService = {
         accepted: acceptedCount,
         rejected: rejectedCount,
         duplicates: duplicatesCount,
-        totalRows: records.length,
+        totalRows: candidates.length + errors.length,
       },
       errors: errors.slice(0, 50), // Return top errors
       sampleAccepted: candidates.filter((c) => !c.isDuplicate).slice(0, 10),
