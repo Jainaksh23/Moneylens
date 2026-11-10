@@ -28,13 +28,16 @@ describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
   const app = createApp();
   const csrfHeader = { 'X-Requested-With': 'moneylens' };
   const originalFetch = global.fetch;
+  const originalGroqKey = env.GROQ_API_KEY;
 
   let userACookie: string;
   let userBCookie: string;
   let userAId: string;
 
   beforeEach(async () => {
-    global.fetch = jest.fn().mockImplementation((url: string) => {
+    env.GROQ_API_KEY = 'gsk_mock_valid_test_key_123';
+
+    global.fetch = jest.fn().mockImplementation((url: string, opts?: any) => {
       if (url.includes('/rag/retrieve')) {
         return Promise.resolve({
           ok: true,
@@ -55,6 +58,37 @@ describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
             count: 1,
             isWeakRetrieval: false,
             thresholdApplied: 0.32,
+          }),
+        } as Response);
+      }
+      if (url.includes('api.groq.com')) {
+        let reply = 'Based on your records and knowledge base, here is the answer.';
+        try {
+          const body = opts?.body ? JSON.parse(opts.body) : {};
+          const systemMsg = body.messages?.find((m: any) => m.role === 'system')?.content || '';
+          if (systemMsg.includes('No expense transactions recorded')) {
+            reply = 'You have no expense transactions recorded for Food in this period (₹0).';
+          } else if (systemMsg.includes('14,500') || systemMsg.includes('14500')) {
+            reply = 'Based on your records, your March food expense was ₹14,500.';
+          } else if (systemMsg.includes('Netflix') || systemMsg.includes('649')) {
+            reply = 'Your upcoming bills include Netflix at ₹649.';
+          } else if (systemMsg.includes('50/30/20')) {
+            reply = 'The 50/30/20 rule is a budgeting framework: 50% Needs, 30% Wants, 20% Savings.';
+          }
+        } catch {}
+
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            choices: [
+              {
+                message: {
+                  content: reply,
+                },
+              },
+            ],
+            usage: { total_tokens: 150 },
           }),
         } as Response);
       }
@@ -141,6 +175,7 @@ describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+    env.GROQ_API_KEY = originalGroqKey;
   });
 
   describe('Authentication & Basic Chat', () => {
@@ -371,5 +406,153 @@ describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
         .set('Cookie', userBCookie);
       expect(emptyRes.body.data.length).toBe(0);
     }, 15000);
+  });
+
+  describe('Classified Chat Error States & Safe Diagnostics', () => {
+    it('should return 503 LLM_NOT_CONFIGURED when GROQ_API_KEY is missing', async () => {
+      env.GROQ_API_KEY = '';
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'What is my budget?' });
+
+      expect(res.status).toBe(503);
+      expect(res.body.error).toBeDefined();
+      expect(res.body.error.code).toBe('LLM_NOT_CONFIGURED');
+      expect(res.body.error.message).toContain('not configured');
+      expect(res.body.requestId).toBeDefined();
+    });
+
+    it('should return 502 LLM_AUTH_FAILED when Groq returns 401/403', async () => {
+      env.GROQ_API_KEY = 'gsk_invalid_mock_key';
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ chunks: [], isWeakRetrieval: true }),
+          } as Response);
+        }
+        if (url.includes('api.groq.com')) {
+          return Promise.resolve({
+            ok: false,
+            status: 401,
+            text: async () => 'Invalid API Key',
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'What is my budget?' });
+
+      expect(res.status).toBe(502);
+      expect(res.body.error.code).toBe('LLM_AUTH_FAILED');
+      expect(res.body.error.message).toContain('authentication failed');
+      expect(res.body.requestId).toBeDefined();
+    });
+
+    it('should return 504 LLM_TIMEOUT when Groq request times out or aborts', async () => {
+      env.GROQ_API_KEY = 'gsk_valid_mock_key';
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ chunks: [], isWeakRetrieval: true }),
+          } as Response);
+        }
+        if (url.includes('api.groq.com')) {
+          const abortError = new Error('The operation was aborted');
+          abortError.name = 'AbortError';
+          return Promise.reject(abortError);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'What is my budget?' });
+
+      expect(res.status).toBe(504);
+      expect(res.body.error.code).toBe('LLM_TIMEOUT');
+      expect(res.body.error.message).toContain('timed out');
+      expect(res.body.requestId).toBeDefined();
+    });
+
+    it('should return 429 LLM_RATE_LIMITED when Groq returns 429', async () => {
+      env.GROQ_API_KEY = 'gsk_valid_mock_key';
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ chunks: [], isWeakRetrieval: true }),
+          } as Response);
+        }
+        if (url.includes('api.groq.com')) {
+          return Promise.resolve({
+            ok: false,
+            status: 429,
+            text: async () => 'Rate limit exceeded',
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'What is my budget?' });
+
+      expect(res.status).toBe(429);
+      expect(res.body.error.code).toBe('LLM_RATE_LIMITED');
+      expect(res.body.error.message).toContain('high traffic');
+      expect(res.body.requestId).toBeDefined();
+    });
+
+    it('should handle ML down (RAG_UNAVAILABLE) gracefully by answering with tools and disclosing limitations', async () => {
+      env.GROQ_API_KEY = 'gsk_valid_mock_key';
+      global.fetch = jest.fn().mockImplementation((url: string, _opts?: any) => {
+        if (url.includes('/rag/retrieve')) {
+          return Promise.reject(new Error('Connection refused (ML sleeping)'));
+        }
+        if (url.includes('api.groq.com')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              choices: [
+                {
+                  message: {
+                    content:
+                      'Your verified food spend in March was ₹14,500 based on your transaction records.',
+                  },
+                },
+              ],
+              usage: { total_tokens: 100 },
+            }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unhandled URL: ${url}`));
+      });
+
+      const res = await request(app)
+        .post('/api/v1/chat')
+        .set(csrfHeader)
+        .set('Cookie', userACookie)
+        .send({ message: 'March mein food pe kitna gaya?' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.answer).toContain('14,500');
+      expect(res.body.data.toolsUsed).toContain('getCategorySpend');
+      expect(res.body.data.limitations).toContain('Knowledge retrieval is currently unavailable');
+      expect(res.body.data.ragStatus).toBe('unavailable');
+    });
   });
 });

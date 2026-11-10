@@ -7,7 +7,13 @@ export type ErrorCode =
   | 'CONFLICT'
   | 'TOO_MANY_REQUESTS'
   | 'INTERNAL_SERVER_ERROR'
-  | 'SERVICE_UNAVAILABLE';
+  | 'SERVICE_UNAVAILABLE'
+  | 'LLM_NOT_CONFIGURED'
+  | 'LLM_AUTH_FAILED'
+  | 'LLM_RATE_LIMITED'
+  | 'LLM_TIMEOUT'
+  | 'RAG_UNAVAILABLE'
+  | 'INTERNAL_ERROR';
 
 export class AppError extends Error {
   public readonly statusCode: number;

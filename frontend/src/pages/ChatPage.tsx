@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { chatService } from '../services/chatService';
 import type { ChatHistoryMessage, ChatEvidence } from '../services/chatService';
+import { ApiClientError } from '../services/apiClient';
 
 const SUGGESTIONS = [
   'March mein food pe kitna gaya?',
@@ -25,12 +26,61 @@ const SUGGESTIONS = [
   'Which penny stock should I buy for guaranteed returns tomorrow?',
 ];
 
+export function getFriendlyChatError(
+  code: string | null,
+  fallbackMessage?: string | null,
+): { message: string; canRetry: boolean } {
+  switch (code) {
+    case 'LLM_NOT_CONFIGURED':
+      return {
+        message: 'Assistant is not configured. Please add GROQ_API_KEY in deployment settings.',
+        canRetry: false,
+      };
+    case 'LLM_AUTH_FAILED':
+      return {
+        message: 'Assistant authentication failed. The configured GROQ_API_KEY is invalid or unauthorized.',
+        canRetry: false,
+      };
+    case 'LLM_RATE_LIMITED':
+      return {
+        message: 'Assistant is temporarily rate-limited. Please wait a moment and retry.',
+        canRetry: true,
+      };
+    case 'LLM_TIMEOUT':
+      return {
+        message: 'Assistant is waking up, retry in a minute',
+        canRetry: true,
+      };
+    case 'RAG_UNAVAILABLE':
+      return {
+        message: 'Knowledge retrieval is currently offline. Answers may be limited to your transaction records.',
+        canRetry: true,
+      };
+    case 'INTERNAL_ERROR':
+      return {
+        message: 'An internal assistant error occurred. Please retry.',
+        canRetry: true,
+      };
+    case 'NETWORK_ERROR':
+      return {
+        message: 'Could not connect to server. Please check your internet connection.',
+        canRetry: true,
+      };
+    default:
+      return {
+        message: fallbackMessage || 'An unexpected error occurred. Please try again.',
+        canRetry: true,
+      };
+  }
+}
+
 export const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState<ChatHistoryMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -68,6 +118,7 @@ export const ChatPage: React.FC = () => {
 
     setInputText('');
     setError(null);
+    setErrorCode(null);
     setLastFailedMessage(null);
 
     // Optimistically append user message
@@ -98,6 +149,8 @@ export const ChatPage: React.FC = () => {
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
+      const code = err instanceof ApiClientError ? err.code : (err?.code || null);
+      setErrorCode(code);
       setError(err?.message || 'Failed to send message. Please check connection and try again.');
       setLastFailedMessage(text);
     } finally {
@@ -303,23 +356,30 @@ export const ChatPage: React.FC = () => {
         )}
 
         {/* Error / Retry Banner */}
-        {error && (
-          <div className="rounded-lg border border-rose-500/30 bg-rose-950/20 p-3 text-xs text-rose-300 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-rose-400 flex-shrink-0" />
-              <span>{error}</span>
+        {error && (() => {
+          const friendly = getFriendlyChatError(errorCode, error);
+          return (
+            <div
+              role="alert"
+              className="rounded-lg border border-rose-500/30 bg-rose-950/20 p-3 text-xs text-rose-300 flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-rose-400 flex-shrink-0" />
+                <span>{friendly.message}</span>
+              </div>
+              {lastFailedMessage && friendly.canRetry && (
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="inline-flex items-center space-x-1 rounded bg-rose-900/60 hover:bg-rose-800 px-2.5 py-1 text-[11px] font-medium text-white transition-colors ml-2 flex-shrink-0"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  <span>Retry</span>
+                </button>
+              )}
             </div>
-            {lastFailedMessage && (
-              <button
-                onClick={handleRetry}
-                className="inline-flex items-center space-x-1 rounded bg-rose-900/60 hover:bg-rose-800 px-2 py-1 text-[11px] font-medium text-white transition-colors"
-              >
-                <RefreshCw className="h-3 w-3" />
-                <span>Retry</span>
-              </button>
-            )}
-          </div>
-        )}
+          );
+        })()}
 
         <div ref={messagesEndRef} />
       </div>

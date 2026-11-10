@@ -10,6 +10,8 @@
  */
 
 import { env } from '../config/env';
+import { logger } from '../utils/logger';
+import { AppError } from '../utils/errors';
 
 export interface ChatMessagePayload {
   role: 'system' | 'user' | 'assistant';
@@ -37,7 +39,7 @@ export class GroqService {
   }
 
   /**
-   * Generates completion with retry, backoff, and graceful fallback.
+   * Generates completion with retry, backoff, and classified error codes.
    */
   async generateCompletion(
     messages: ChatMessagePayload[],
@@ -46,20 +48,31 @@ export class GroqService {
       maxTokens?: number;
       timeoutMs?: number;
       maxRetries?: number;
+      requestId?: string;
     } = {}
   ): Promise<GroqCompletionResponse> {
     const temperature = options.temperature ?? 0.1;
     const maxTokens = options.maxTokens ?? 1024;
     const timeoutMs = options.timeoutMs ?? 15000;
     const maxRetries = options.maxRetries ?? 2;
+    const requestId = options.requestId || 'unknown';
 
-    // If no API key configured, use deterministic grounded fallback
-    if (!this.apiKey || this.apiKey.trim() === '' || this.apiKey.startsWith('mock_')) {
-      return this.synthesizeFallback(messages);
+    // Check API key dynamically (supports test runtime modifications)
+    const apiKey = env.GROQ_API_KEY ?? this.apiKey;
+
+    if (!apiKey || apiKey.trim() === '') {
+      logger.error(
+        { requestId, errorCode: 'LLM_NOT_CONFIGURED' },
+        'GROQ_API_KEY is missing or empty; cannot generate completion',
+      );
+      throw new AppError(
+        'AI assistant is not configured. Please set GROQ_API_KEY in the environment.',
+        503,
+        'LLM_NOT_CONFIGURED',
+      );
     }
 
-    let lastError: Error | null = null;
-    let delay = 1000;
+    let delay = 500;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
@@ -70,7 +83,7 @@ export class GroqService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
             model: this.model,
@@ -85,23 +98,77 @@ export class GroqService {
 
         if (!response.ok) {
           const status = response.status;
-          const errorBody = await response.text();
 
-          // Retry on 429 (rate limit) or 5xx server errors
-          if ((status === 429 || status >= 500) && attempt < maxRetries) {
+          // 401 / 403: Authentication or authorization failure (do not retry)
+          if (status === 401 || status === 403) {
+            logger.error(
+              {
+                requestId,
+                errorCode: 'LLM_AUTH_FAILED',
+                upstreamStatusCode: status,
+              },
+              `Groq API authentication failed with status ${status}`,
+            );
+            throw new AppError(
+              'AI assistant authentication failed. Please check the configured GROQ_API_KEY.',
+              502,
+              'LLM_AUTH_FAILED',
+            );
+          }
+
+          // 429: Rate limit exceeded
+          if (status === 429) {
+            if (attempt < maxRetries) {
+              await new Promise((r) => setTimeout(r, delay));
+              delay *= 2;
+              continue;
+            }
+            logger.warn(
+              {
+                requestId,
+                errorCode: 'LLM_RATE_LIMITED',
+                upstreamStatusCode: 429,
+              },
+              'Groq API rate limit exceeded (429)',
+            );
+            throw new AppError(
+              'AI assistant is experiencing high traffic. Please wait a moment and try again.',
+              429,
+              'LLM_RATE_LIMITED',
+            );
+          }
+
+          // 5xx: Server errors: retry if attempts left
+          if (status >= 500 && attempt < maxRetries) {
             await new Promise((r) => setTimeout(r, delay));
             delay *= 2;
             continue;
           }
 
-          throw new Error(`Groq API error HTTP ${status}: ${errorBody}`);
+          logger.warn(
+            {
+              requestId,
+              errorCode: 'LLM_TIMEOUT',
+              upstreamStatusCode: status,
+            },
+            `Groq API server error status ${status}`,
+          );
+          throw new AppError(
+            'AI assistant request timed out. The service may be waking up, please retry in a minute.',
+            504,
+            'LLM_TIMEOUT',
+          );
         }
 
         const data: any = await response.json();
         const choice = data.choices?.[0];
         const content = choice?.message?.content || '';
         if (!content.trim()) {
-          throw new Error('Groq API returned empty or missing completion content');
+          throw new AppError(
+            'Groq API returned empty or missing completion content',
+            502,
+            'INTERNAL_ERROR',
+          );
         }
 
         return {
@@ -115,65 +182,56 @@ export class GroqService {
         };
       } catch (err: any) {
         clearTimeout(timer);
-        lastError = err;
-        if (attempt < maxRetries && err.name !== 'AbortError') {
+
+        // If it's already a classified AppError (e.g. 401/403 or 429), rethrow immediately
+        if (err instanceof AppError) {
+          throw err;
+        }
+
+        // Handle AbortError / Timeout
+        if (err.name === 'AbortError' || err.message?.toLowerCase().includes('timeout') || err.message?.toLowerCase().includes('abort')) {
+          logger.warn(
+            {
+              requestId,
+              errorCode: 'LLM_TIMEOUT',
+            },
+            'Groq API request timed out (AbortError)',
+          );
+          throw new AppError(
+            'AI assistant request timed out. The service may be waking up, please retry in a minute.',
+            504,
+            'LLM_TIMEOUT',
+          );
+        }
+
+        // Retry other transient network errors
+        if (attempt < maxRetries) {
           await new Promise((r) => setTimeout(r, delay));
           delay *= 2;
+          continue;
         }
+
+        logger.warn(
+          {
+            requestId,
+            errorCode: 'LLM_TIMEOUT',
+            error: err?.message,
+          },
+          'Groq API connection failed or timed out after retries',
+        );
+        throw new AppError(
+          'AI assistant request timed out. The service may be waking up, please retry in a minute.',
+          504,
+          'LLM_TIMEOUT',
+        );
       }
     }
 
-    // Provider outage fallback
-    return this.synthesizeFallback(messages, lastError);
-  }
-
-  /**
-   * Deterministic grounded synthesis when LLM provider is down or offline.
-   * Guarantees that users receive accurate numbers and knowledge without crash.
-   */
-  private synthesizeFallback(
-    messages: ChatMessagePayload[],
-    providerError?: Error | null
-  ): GroqCompletionResponse {
-    const systemMsg = messages.find((m) => m.role === 'system')?.content || '';
-
-    // Extract user data section from system message if present
-    const userDataMatch = systemMsg.match(/=== USER FINANCIAL METRICS ===([\s\S]*?)=== END USER FINANCIAL METRICS ===/);
-    const knowledgeMatch = systemMsg.match(/=== RETRIEVED KNOWLEDGE BASE ===([\s\S]*?)=== END RETRIEVED KNOWLEDGE BASE ===/);
-
-    const userDataText = userDataMatch && userDataMatch[1] ? userDataMatch[1].trim() : '';
-    const knowledgeText = knowledgeMatch && knowledgeMatch[1] ? knowledgeMatch[1].trim() : '';
-
-    let answer = '';
-
-    if (userDataText && knowledgeText) {
-      answer = `Based on your MoneyLens financial records and our educational knowledge base:\n\n` +
-        `**Your Financial Metrics:**\n${userDataText}\n\n` +
-        `**Relevant Educational Concept:**\n${knowledgeText.slice(0, 350)}...\n\n` +
-        `*(Note: Generated via MoneyLens deterministic analysis engine)*`;
-    } else if (userDataText) {
-      answer = `Here are the metrics from your authenticated MoneyLens records:\n\n${userDataText}\n\n` +
-        `*(All figures reflect your verified transaction history)*`;
-    } else if (knowledgeText) {
-      answer = `According to the MoneyLens Financial Knowledge Base:\n\n${knowledgeText.slice(0, 500)}...\n\n` +
-        `*(Source: MoneyLens Curated Financial Guides)*`;
-    } else {
-      answer = `I am ready to help with your personal finances. You can ask about your monthly spending (e.g., 'How much did I spend on food in March?'), your active goals, or financial concepts like the 50/30/20 rule, emergency funds, and SIPs.`;
-    }
-
-    if (providerError) {
-      answer += `\n\n*(Provider Note: LLM gateway is currently operating in offline mode. Direct financial aggregates are displayed.)*`;
-    }
-
-    return {
-      content: answer,
-      tokenUsage: {
-        promptTokens: 100,
-        completionTokens: 80,
-        totalTokens: 180,
-      },
-      usedFallback: true,
-    };
+    throw new AppError(
+      'AI assistant request timed out. The service may be waking up, please retry in a minute.',
+      504,
+      'LLM_TIMEOUT',
+    );
   }
 }
 

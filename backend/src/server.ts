@@ -17,7 +17,9 @@ async function startServer() {
         {
           port: env.PORT,
           env: env.NODE_ENV,
-          mlServiceUrl: env.ML_SERVICE_URL,
+          groqConfigured: Boolean(env.GROQ_API_KEY && env.GROQ_API_KEY.trim().length > 0),
+          internalKeyConfigured: Boolean(env.INTERNAL_API_KEY && env.INTERNAL_API_KEY.trim().length > 0),
+          mlServiceConfigured: Boolean(env.ML_SERVICE_URL && env.ML_SERVICE_URL.trim().length > 0),
         },
         `🚀 MoneyLens Backend Gateway started on port ${env.PORT}`,
       );

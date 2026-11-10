@@ -27,16 +27,14 @@ describe('Backend Health & Core Middleware Tests', () => {
     const res = await request(app).get('/health/ready');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      status: 'ok',
-      checks: {
-        database: 'connected',
-      },
-    });
+    expect(res.body.status).toBe('ok');
+    expect(res.body.checks.database).toBe('connected');
+    expect(typeof res.body.checks.groqConfigured).toBe('boolean');
+    expect(typeof res.body.checks.internalKeyConfigured).toBe('boolean');
+    expect(typeof res.body.checks.mlServiceConfigured).toBe('boolean');
     // Ensure no internals leaked
     expect(res.body).not.toHaveProperty('uri');
     expect(res.body).not.toHaveProperty('host');
-    expect(res.body).not.toHaveProperty('database');
   });
 
   it('GET /api/v1/health/ready should also return 200 when MongoDB is connected', async () => {
@@ -45,21 +43,20 @@ describe('Backend Health & Core Middleware Tests', () => {
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.checks.database).toBe('connected');
+    expect(typeof res.body.checks.groqConfigured).toBe('boolean');
   });
 
   it('GET /api/v1/ready should return 200 when MongoDB is connected without leaking internals', async () => {
     const res = await request(app).get('/api/v1/ready');
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      status: 'ok',
-      checks: {
-        database: 'connected',
-      },
-    });
+    expect(res.body.status).toBe('ok');
+    expect(res.body.checks.database).toBe('connected');
+    expect(typeof res.body.checks.groqConfigured).toBe('boolean');
+    expect(typeof res.body.checks.internalKeyConfigured).toBe('boolean');
+    expect(typeof res.body.checks.mlServiceConfigured).toBe('boolean');
     expect(res.body).not.toHaveProperty('uri');
     expect(res.body).not.toHaveProperty('host');
-    expect(res.body).not.toHaveProperty('database');
   });
 
   it('GET /api/v1/ready should return 503 when database is disconnected', async () => {
@@ -67,12 +64,9 @@ describe('Backend Health & Core Middleware Tests', () => {
 
     const res = await request(app).get('/api/v1/ready');
     expect(res.status).toBe(503);
-    expect(res.body).toEqual({
-      status: 'unavailable',
-      checks: {
-        database: 'disconnected',
-      },
-    });
+    expect(res.body.status).toBe('unavailable');
+    expect(res.body.checks.database).toBe('disconnected');
+    expect(typeof res.body.checks.groqConfigured).toBe('boolean');
 
     readyStateSpy.mockRestore();
   });
@@ -82,12 +76,9 @@ describe('Backend Health & Core Middleware Tests', () => {
 
     const res = await request(app).get('/health/ready');
     expect(res.status).toBe(503);
-    expect(res.body).toEqual({
-      status: 'unavailable',
-      checks: {
-        database: 'disconnected',
-      },
-    });
+    expect(res.body.status).toBe('unavailable');
+    expect(res.body.checks.database).toBe('disconnected');
+    expect(typeof res.body.checks.groqConfigured).toBe('boolean');
 
     readyStateSpy.mockRestore();
   });

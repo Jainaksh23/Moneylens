@@ -1,7 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middlewares/auth.js';
-import { chatService } from '../services/chatService';
+import { chatService } from '../services/chatService.js';
+import { AppError } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
 
 const router = Router();
 
@@ -34,16 +36,41 @@ router.post(
     try {
       const parsed = ChatMessageSchema.parse(req.body);
       const userId = req.user!.id;
+      const requestId = req.requestId || 'unknown';
 
-      const result = await chatService.processUserMessage(userId, parsed.message);
+      const result = await chatService.processUserMessage(userId, parsed.message, requestId);
       res.status(200).json({
         data: {
           ...result,
           response: result.answer,
         },
       });
-    } catch (err) {
-      next(err);
+    } catch (err: any) {
+      if (err instanceof AppError || err?.name === 'ZodError') {
+        next(err);
+        return;
+      }
+
+      logger.error(
+        {
+          requestId: req.requestId,
+          errorCode: 'INTERNAL_ERROR',
+          err: {
+            name: err?.name,
+            message: err?.message,
+            stack: err?.stack,
+          },
+        },
+        'Unhandled internal error during chat message processing',
+      );
+
+      next(
+        new AppError(
+          'An internal error occurred in the assistant service',
+          500,
+          'INTERNAL_ERROR',
+        ),
+      );
     }
   }
 );

@@ -16,6 +16,7 @@ import { ChatMessage, IChatEvidence } from '../models/ChatMessage';
 import { chatTools } from './chatTools';
 import { groqService, ChatMessagePayload } from './groqService';
 import { BadRequestError, TooManyRequestsError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 export interface ChatResponseDto {
   answer: string;
@@ -23,6 +24,7 @@ export interface ChatResponseDto {
   limitations?: string;
   disclaimer?: string;
   toolsUsed: string[];
+  ragStatus?: 'available' | 'unavailable';
 }
 
 // In-memory rate limiter & token budget per user (sliding window)
@@ -96,7 +98,10 @@ export class ChatService {
   /**
    * Retrieves knowledge chunks from ml-service /rag/retrieve.
    */
-  private async retrieveKnowledge(query: string): Promise<{ chunks: any[]; isWeak: boolean }> {
+  private async retrieveKnowledge(
+    query: string,
+    requestId?: string,
+  ): Promise<{ chunks: any[]; isWeak: boolean; ragUnavailable?: boolean }> {
     try {
       const timeoutMs = process.env.NODE_ENV === 'test' ? 300 : 70_000;
       const controller = new AbortController();
@@ -107,6 +112,7 @@ export class ChatService {
         headers: {
           'Content-Type': 'application/json',
           'X-Internal-Key': env.INTERNAL_API_KEY,
+          'X-Request-Id': requestId || '',
         },
         body: JSON.stringify({
           query,
@@ -118,16 +124,33 @@ export class ChatService {
       clearTimeout(timeoutId);
 
       if (!resp.ok) {
-        return { chunks: [], isWeak: true };
+        logger.warn(
+          {
+            requestId,
+            errorCode: 'RAG_UNAVAILABLE',
+            upstreamStatusCode: resp.status,
+          },
+          `RAG retrieval service returned non-2xx status: ${resp.status}`,
+        );
+        return { chunks: [], isWeak: true, ragUnavailable: true };
       }
 
       const data: any = await resp.json();
       return {
         chunks: data.chunks || [],
         isWeak: !!data.isWeakRetrieval,
+        ragUnavailable: false,
       };
-    } catch {
-      return { chunks: [], isWeak: true };
+    } catch (err: any) {
+      logger.warn(
+        {
+          requestId,
+          errorCode: 'RAG_UNAVAILABLE',
+          error: err?.message,
+        },
+        'RAG retrieval service unreachable or timed out',
+      );
+      return { chunks: [], isWeak: true, ragUnavailable: true };
     }
   }
 
@@ -140,7 +163,11 @@ export class ChatService {
    * 5. Call LLM (with backoff & fallback)
    * 6. Persist & Return
    */
-  async processUserMessage(userId: string, message: string): Promise<ChatResponseDto> {
+  async processUserMessage(
+    userId: string,
+    message: string,
+    requestId?: string,
+  ): Promise<ChatResponseDto> {
     if (!message || message.trim().length === 0) {
       throw new BadRequestError('Message cannot be empty');
     }
@@ -348,22 +375,28 @@ export class ChatService {
     // -------------------------------------------------------------
     // Knowledge Base Retrieval
     // -------------------------------------------------------------
-    const { chunks, isWeak } = await this.retrieveKnowledge(message);
+    const { chunks, isWeak, ragUnavailable } = await this.retrieveKnowledge(message, requestId);
 
     let knowledgeContextText = '';
-    for (const chunk of chunks) {
-      knowledgeContextText += `[Source: ${chunk.title} (${chunk.source}) | Category: ${chunk.category}]\n${chunk.content}\n\n`;
-      evidence.push({
-        type: 'knowledge',
-        source: chunk.title,
-        details: { category: chunk.category, sourceFile: chunk.source, similarity: chunk.similarity },
-      });
-    }
+    if (ragUnavailable) {
+      limitations = limitations
+        ? `${limitations} Note: Knowledge retrieval is currently unavailable.`
+        : 'Knowledge retrieval is currently unavailable (ML service is offline or waking up). Answers are based on your personal financial data.';
+    } else {
+      for (const chunk of chunks) {
+        knowledgeContextText += `[Source: ${chunk.title} (${chunk.source}) | Category: ${chunk.category}]\n${chunk.content}\n\n`;
+        evidence.push({
+          type: 'knowledge',
+          source: chunk.title,
+          details: { category: chunk.category, sourceFile: chunk.source, similarity: chunk.similarity },
+        });
+      }
 
-    if (isWeak && !userDataContextText) {
-      limitations =
-        limitations ||
-        'Relevant financial educational documents were limited for this query. The answer is based on general principles.';
+      if (isWeak && !userDataContextText) {
+        limitations =
+          limitations ||
+          'Relevant financial educational documents were limited for this query. The answer is based on general principles.';
+      }
     }
 
     // -------------------------------------------------------------
@@ -385,7 +418,7 @@ CRITICAL OPERATING RULES:
    - Keep answers concise, transparent, and structured.
 
 === RETRIEVED KNOWLEDGE BASE ===
-${knowledgeContextText.trim() || 'No specific educational documents matched.'}
+${ragUnavailable ? 'Knowledge retrieval service is currently unavailable.' : knowledgeContextText.trim() || 'No specific educational documents matched.'}
 === END RETRIEVED KNOWLEDGE BASE ===
 
 === USER FINANCIAL METRICS ===
@@ -402,6 +435,7 @@ ${userDataContextText.trim() || 'No specific user transactional aggregates reque
     const completion = await groqService.generateCompletion(messages, {
       temperature: 0.1,
       maxTokens: 800,
+      requestId,
     });
 
     if (completion.tokenUsage) {
@@ -445,6 +479,7 @@ ${userDataContextText.trim() || 'No specific user transactional aggregates reque
       limitations,
       disclaimer,
       toolsUsed,
+      ragStatus: ragUnavailable ? 'unavailable' : 'available',
     };
   }
 
