@@ -42,7 +42,8 @@ async function fetchMLForecast(
   payload: Record<string, unknown>,
   requestId: string,
 ): Promise<MLForecastResponse> {
-  const endpoint = `${env.ML_SERVICE_URL}/forecast`;
+  const baseUrl = env.ML_SERVICE_URL.replace(/\/+$/, '');
+  const endpoint = `${baseUrl}/forecast`;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const controller = new AbortController();
@@ -66,7 +67,23 @@ async function fetchMLForecast(
         return { success: true, data };
       }
 
-      // Check for 4xx client errors (do not retry)
+      // Check if service returned 404 (route/service not found on host) or 401/403 (auth key mismatch).
+      // These are infrastructure/waking-up issues, NOT invalid user series parameters.
+      if (res.status === 404 || res.status === 401 || res.status === 403) {
+        logger.warn(
+          { requestId, statusCode: res.status, route: '/forecast' },
+          `ML forecast service returned ${res.status} (service waking up or path/key mismatch)`,
+        );
+        return {
+          success: false,
+          kind: 'unreachable',
+          statusCode: res.status,
+          reason: 'Forecast service is waking up, please retry in a minute',
+          retryable: true,
+        };
+      }
+
+      // Check for 4xx client errors (e.g. 422 Unprocessable Entity, do not retry)
       if (res.status >= 400 && res.status < 500) {
         let sanitizedReason = 'Invalid forecast request parameters';
         try {
@@ -75,6 +92,8 @@ async function fetchMLForecast(
             sanitizedReason = body.detail.slice(0, 150);
           } else if (body && typeof body.message === 'string') {
             sanitizedReason = body.message.slice(0, 150);
+          } else if (body && body.error && typeof body.error.message === 'string') {
+            sanitizedReason = body.error.message.slice(0, 150);
           }
         } catch {
           // Ignore json parse error

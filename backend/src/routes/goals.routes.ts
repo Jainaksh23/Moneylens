@@ -21,7 +21,8 @@ const TIMEOUT_MS = 5000;
 async function fetchMLGoalScore(
   payload: Record<string, unknown>,
 ): Promise<Record<string, unknown> | null> {
-  const endpoint = `${env.ML_SERVICE_URL}/goals/score`;
+  const baseUrl = env.ML_SERVICE_URL.replace(/\/+$/, '');
+  const endpoint = `${baseUrl}/goals/score`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
