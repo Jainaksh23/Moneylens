@@ -7,6 +7,9 @@ import { resetAuthLimiters } from '../src/middlewares/rateLimiter.js';
 let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {
+  if (process.env.SKIP_MONGO_MEMORY_SERVER === 'true') {
+    return;
+  }
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
   process.env.MONGODB_URI = mongoUri;
@@ -23,10 +26,12 @@ afterAll(async () => {
 }, 30000);
 
 afterEach(async () => {
-  // Clean all collections between tests
-  const collections = mongoose.connection.collections;
-  for (const key in collections) {
-    await collections[key]!.deleteMany({});
+  // Clean all collections between tests if connected
+  if (mongoose.connection.readyState !== 0) {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+      await collections[key]!.deleteMany({});
+    }
   }
   resetAuthLimiters();
 });

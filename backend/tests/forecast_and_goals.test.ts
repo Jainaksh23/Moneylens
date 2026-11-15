@@ -403,7 +403,7 @@ describe('Phase 5: Cash-Flow Forecast & Goals Domain Integration Tests', () => {
       expect(res.body.forecast).toBeUndefined(); // Never fabricated
     });
 
-    it('should return status: generation_failed with retryable: false when ML service returns 4xx', async () => {
+    it('should return status: generation_failed with ML_VALIDATION_FAILED when ML service returns 422/400', async () => {
       // 20 days of transactions
       const txs = Array.from({ length: 20 }, (_, i) => ({
         userId: userAId,
@@ -419,11 +419,15 @@ describe('Phase 5: Cash-Flow Forecast & Goals Domain Integration Tests', () => {
       }));
       await Transaction.create(txs);
 
-      // Mock 422 Unprocessable Entity
+      // Mock 422 Unprocessable Entity with standard FastAPI detail
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 422,
-        json: async () => ({ detail: 'Invalid parameters in forecast series' }),
+        json: async () => ({
+          detail: [
+            { loc: ['body', 'dailySeries', 0, 'net'], msg: 'Field required', type: 'missing' },
+          ],
+        }),
       });
 
       const res = await request(app)
@@ -434,8 +438,83 @@ describe('Phase 5: Cash-Flow Forecast & Goals Domain Integration Tests', () => {
       expect(res.status).toBe(200);
       expect(res.body.available).toBe(false);
       expect(res.body.status).toBe('generation_failed');
+      expect(res.body.reasonCode).toBe('ML_VALIDATION_FAILED');
+      expect(res.body.reason).toBe('Forecast request format was rejected');
       expect(res.body.retryable).toBe(false);
-      expect(res.body.reason).toBe('Could not generate forecast');
+    });
+
+    it('should return status: generation_failed with ML_AUTH_FAILED when ML returns 401/403', async () => {
+      // 20 days of transactions
+      const txs = Array.from({ length: 20 }, (_, i) => ({
+        userId: userAId,
+        date: new Date(2026, 0, i + 1),
+        amount: 1000,
+        direction: 'expense' as const,
+        description: `Tx auth-${i + 1}`,
+        merchant: 'Vendor',
+        category: 'Food',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-auth-${i + 1}`,
+      }));
+      await Transaction.create(txs);
+
+      // Mock 403 Forbidden
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: async () => ({
+          error: { code: 'FORBIDDEN', message: 'Invalid X-Internal-Key header' },
+        }),
+      });
+
+      const res = await request(app)
+        .get('/api/v1/forecast')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.available).toBe(false);
+      expect(res.body.status).toBe('generation_failed');
+      expect(res.body.reasonCode).toBe('ML_AUTH_FAILED');
+      expect(res.body.reason).toBe('Internal service key mismatch between backend and ML service');
+      expect(res.body.retryable).toBe(true);
+    });
+
+    it('should return status: generation_failed with ML_ROUTE_NOT_FOUND when ML returns 404', async () => {
+      // 20 days of transactions
+      const txs = Array.from({ length: 20 }, (_, i) => ({
+        userId: userAId,
+        date: new Date(2026, 0, i + 1),
+        amount: 1000,
+        direction: 'expense' as const,
+        description: `Tx 404-${i + 1}`,
+        merchant: 'Vendor',
+        category: 'Food',
+        categorySource: 'user' as const,
+        source: 'manual' as const,
+        fingerprint: `fp-404-${i + 1}`,
+      }));
+      await Transaction.create(txs);
+
+      // Mock 404 Not Found
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ detail: 'Not Found' }),
+      });
+
+      const res = await request(app)
+        .get('/api/v1/forecast')
+        .set(csrfHeader)
+        .set('Cookie', [userACookie]);
+
+      expect(res.status).toBe(200);
+      expect(res.body.available).toBe(false);
+      expect(res.body.status).toBe('generation_failed');
+      expect(res.body.reasonCode).toBe('ML_ROUTE_NOT_FOUND');
+      expect(res.body.reason).toBe('Forecast endpoint not found on ML service');
+      expect(res.body.retryable).toBe(true);
     });
 
     it('should verify ML-down and insufficient-data states are distinct and different', async () => {

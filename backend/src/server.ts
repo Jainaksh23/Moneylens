@@ -13,6 +13,13 @@ async function startServer() {
 
     // 3. Start HTTP server binding explicitly to 0.0.0.0
     const server = app.listen(env.PORT, '0.0.0.0', () => {
+      let mlServiceHost = 'unknown';
+      try {
+        mlServiceHost = new URL(env.ML_SERVICE_URL).hostname;
+      } catch {
+        // ignore invalid URL
+      }
+
       logger.info(
         {
           port: env.PORT,
@@ -22,6 +29,7 @@ async function startServer() {
           groqBaseUrlHost: 'api.groq.com',
           internalKeyConfigured: Boolean(env.INTERNAL_API_KEY && env.INTERNAL_API_KEY.trim().length > 0),
           mlServiceConfigured: Boolean(env.ML_SERVICE_URL && env.ML_SERVICE_URL.trim().length > 0),
+          mlServiceHost,
         },
         `🚀 MoneyLens Backend Gateway started on port ${env.PORT}`,
       );

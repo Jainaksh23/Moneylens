@@ -54,6 +54,7 @@ export interface WeeklyTrendItem {
 export interface ForecastResponse {
   available: boolean;
   status?: 'ok' | 'ml_unavailable' | 'generation_failed' | 'insufficient_data';
+  reasonCode?: 'ML_AUTH_FAILED' | 'ML_VALIDATION_FAILED' | 'ML_ROUTE_NOT_FOUND' | string;
   reason?: string;
   retryable?: boolean;
   dataCoverage?: DataCoverageDetails;

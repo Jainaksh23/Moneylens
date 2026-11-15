@@ -7,6 +7,9 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config(); // fallback to current working directory
 
+export const INTERNAL_KEY_HEADER = 'X-Internal-Key';
+export const INTERNAL_KEY_ENV_NAME = 'INTERNAL_API_KEY';
+
 export const sanitizeEnvString = (val?: string | null): string => {
   if (val === undefined || val === null) return '';
   let s = String(val).trim();
@@ -14,6 +17,11 @@ export const sanitizeEnvString = (val?: string | null): string => {
     s = s.slice(1, -1).trim();
   }
   return s;
+};
+
+export const sanitizeUrl = (val?: string | null): string => {
+  const s = sanitizeEnvString(val);
+  return s.replace(/\/+$/, '');
 };
 
 const envSchema = z.object({
@@ -42,11 +50,16 @@ const envSchema = z.object({
   JWT_EXPIRY: z.string().default('7d'),
   COOKIE_NAME: z.string().default('moneylens_token'),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
-  ML_SERVICE_URL: z.string().url().default('http://localhost:8000'),
+  ML_SERVICE_URL: z
+    .string()
+    .default('http://localhost:8000')
+    .transform((val) => sanitizeUrl(val) || 'http://localhost:8000')
+    .pipe(z.string().url()),
   INTERNAL_API_KEY: z
     .string()
     .min(16, 'INTERNAL_API_KEY must be at least 16 characters')
-    .default('moneylens-internal-secret-key-32-chars-dev'),
+    .default('moneylens-internal-secret-key-32-chars-dev')
+    .transform((val) => sanitizeEnvString(val)),
   GEMINI_API_KEY: z.string().optional(),
   GROQ_API_KEY: z
     .string()
@@ -69,6 +82,16 @@ const envSchema = z.object({
   {
     message:
       'In production mode (NODE_ENV=production), JWT_SECRET and INTERNAL_API_KEY must be set to custom production secrets and cannot use default development keys.',
+  },
+).refine(
+  (data) => {
+    if (data.NODE_ENV === 'production') {
+      return data.ML_SERVICE_URL.startsWith('https://');
+    }
+    return true;
+  },
+  {
+    message: 'In production mode (NODE_ENV=production), ML_SERVICE_URL must use HTTPS protocol (https://).',
   },
 );
 

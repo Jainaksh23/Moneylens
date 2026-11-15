@@ -226,20 +226,35 @@ export const ForecastPage: React.FC = () => {
                 <AlertCircle className="h-6 w-6" />
               </div>
               <h3 className="text-base font-semibold text-white">
-                Could not generate forecast
+                {data.reasonCode === 'ML_AUTH_FAILED'
+                  ? 'Service Authentication Failed'
+                  : data.reasonCode === 'ML_VALIDATION_FAILED'
+                  ? 'Forecast Request Format Rejected'
+                  : data.reasonCode === 'ML_ROUTE_NOT_FOUND'
+                  ? 'Forecast Route Not Found'
+                  : 'Could not generate forecast'}
               </h3>
-              <p className="mt-1 text-sm text-gray-400">
-                {data.reason && data.reason !== 'Could not generate forecast'
-                  ? data.reason
-                  : 'The forecasting service was unable to process the series parameters with current history.'}
+              <p className="mt-1 text-sm text-gray-400 leading-relaxed">
+                {data.reasonCode === 'ML_AUTH_FAILED'
+                  ? (data.reason || 'Internal service key mismatch between backend and ML service')
+                  : data.reasonCode === 'ML_VALIDATION_FAILED'
+                  ? (data.reason || 'Forecast request format was rejected')
+                  : data.reasonCode === 'ML_ROUTE_NOT_FOUND'
+                  ? (data.reason || 'Forecast endpoint not found on ML service')
+                  : (data.reason && data.reason !== 'Could not generate forecast'
+                      ? data.reason
+                      : 'The forecasting service was unable to process the series parameters with current history.')}
               </p>
-              <button
-                type="button"
-                onClick={loadForecast}
-                className="mt-4 px-4 py-1.5 rounded-lg border border-gray-700 bg-gray-800 text-xs text-gray-200 hover:bg-gray-700 transition-colors"
-              >
-                Try Again
-              </button>
+              <div className="mt-4 flex justify-center space-x-3">
+                <button
+                  type="button"
+                  onClick={loadForecast}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-600/80 hover:bg-amber-600 text-white text-xs font-semibold shadow transition-all"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Retry Forecast</span>
+                </button>
+              </div>
             </div>
           )}
 

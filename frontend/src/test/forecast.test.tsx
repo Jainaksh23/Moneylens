@@ -65,6 +65,79 @@ describe('ForecastPage Component State & Error Classification Tests', () => {
     });
   });
 
+  it('renders auth failed message and retry button when reasonCode is ML_AUTH_FAILED', async () => {
+    vi.mocked(forecastService.getForecast).mockResolvedValueOnce({
+      available: false,
+      status: 'generation_failed',
+      reasonCode: 'ML_AUTH_FAILED',
+      reason: 'Internal service key mismatch between backend and ML service',
+      retryable: true,
+      monthlyTrend: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <ForecastPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Service Authentication Failed')).toBeInTheDocument();
+      expect(
+        screen.getByText('Internal service key mismatch between backend and ML service'),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: /retry forecast/i })).toBeInTheDocument();
+  });
+
+  it('renders validation failed message when reasonCode is ML_VALIDATION_FAILED', async () => {
+    vi.mocked(forecastService.getForecast).mockResolvedValueOnce({
+      available: false,
+      status: 'generation_failed',
+      reasonCode: 'ML_VALIDATION_FAILED',
+      reason: 'Forecast request format was rejected',
+      retryable: false,
+      monthlyTrend: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <ForecastPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Forecast Request Format Rejected')).toBeInTheDocument();
+      expect(
+        screen.getByText('Forecast request format was rejected'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('renders route not found message when reasonCode is ML_ROUTE_NOT_FOUND', async () => {
+    vi.mocked(forecastService.getForecast).mockResolvedValueOnce({
+      available: false,
+      status: 'generation_failed',
+      reasonCode: 'ML_ROUTE_NOT_FOUND',
+      reason: 'Forecast endpoint not found on ML service',
+      retryable: true,
+      monthlyTrend: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <ForecastPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Forecast Route Not Found')).toBeInTheDocument();
+      expect(
+        screen.getByText('Forecast endpoint not found on ML service'),
+      ).toBeInTheDocument();
+    });
+  });
+
   it('renders insufficient data guidance and link when history is under 14 days', async () => {
     vi.mocked(forecastService.getForecast).mockResolvedValueOnce({
       available: false,

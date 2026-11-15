@@ -32,9 +32,13 @@ describe('Backend Health & Core Middleware Tests', () => {
     expect(typeof res.body.checks.groqConfigured).toBe('boolean');
     expect(typeof res.body.checks.internalKeyConfigured).toBe('boolean');
     expect(typeof res.body.checks.mlServiceConfigured).toBe('boolean');
+    expect(typeof res.body.checks.mlReachable).toBe('boolean');
+    expect(typeof res.body.checks.mlAuthOk).toBe('boolean');
     // Ensure no internals leaked
     expect(res.body).not.toHaveProperty('uri');
     expect(res.body).not.toHaveProperty('host');
+    expect(res.body).not.toHaveProperty('url');
+    expect(res.body).not.toHaveProperty('key');
   });
 
   it('GET /api/v1/health/ready should also return 200 when MongoDB is connected', async () => {
@@ -55,8 +59,12 @@ describe('Backend Health & Core Middleware Tests', () => {
     expect(typeof res.body.checks.groqConfigured).toBe('boolean');
     expect(typeof res.body.checks.internalKeyConfigured).toBe('boolean');
     expect(typeof res.body.checks.mlServiceConfigured).toBe('boolean');
+    expect(typeof res.body.checks.mlReachable).toBe('boolean');
+    expect(typeof res.body.checks.mlAuthOk).toBe('boolean');
     expect(res.body).not.toHaveProperty('uri');
     expect(res.body).not.toHaveProperty('host');
+    expect(res.body).not.toHaveProperty('url');
+    expect(res.body).not.toHaveProperty('key');
   });
 
   it('GET /api/v1/ready should return 503 when database is disconnected', async () => {

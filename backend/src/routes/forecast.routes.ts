@@ -3,8 +3,13 @@ import mongoose from 'mongoose';
 import { authMiddleware } from '../middlewares/auth.js';
 import { analyticsService } from '../services/analyticsService.js';
 import { Transaction } from '../models/Transaction.js';
-import { env } from '../config/env.js';
+import { env, INTERNAL_KEY_HEADER } from '../config/env.js';
 import { logger } from '../utils/logger.js';
+import {
+  buildForecastPayload,
+  determineForecastMode,
+  ForecastMode,
+} from '../services/forecastPayloadBuilder.js';
 
 export const forecastRouter = Router();
 
@@ -14,6 +19,12 @@ forecastRouter.use(authMiddleware);
 // Use 70s timeout to survive a cold start, with 1 retry (2 total attempts).
 const TIMEOUT_MS = process.env.NODE_ENV === 'test' ? 300 : 70_000;
 const MAX_RETRIES = 1;
+
+export type MLClientErrorReasonCode =
+  | 'ML_AUTH_FAILED'
+  | 'ML_VALIDATION_FAILED'
+  | 'ML_ROUTE_NOT_FOUND'
+  | 'ML_CLIENT_ERROR';
 
 interface MLForecastSuccess {
   success: true;
@@ -32,8 +43,9 @@ interface MLForecastClientError {
   success: false;
   kind: 'client_error';
   statusCode: number;
+  reasonCode: MLClientErrorReasonCode;
   reason: string;
-  retryable: false;
+  retryable: boolean;
 }
 
 type MLForecastResponse = MLForecastSuccess | MLForecastUnavailable | MLForecastClientError;
@@ -53,7 +65,7 @@ async function fetchMLForecast(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Internal-Key': env.INTERNAL_API_KEY,
+          [INTERNAL_KEY_HEADER]: env.INTERNAL_API_KEY,
           'X-Request-Id': requestId,
         },
         body: JSON.stringify(payload),
@@ -66,14 +78,58 @@ async function fetchMLForecast(
         return { success: true, data };
       }
 
-      // Check for 4xx client errors (do not retry)
+      // Check for 4xx client errors (do not retry automatically)
       if (res.status >= 400 && res.status < 500) {
-        let sanitizedReason = 'Invalid forecast request parameters';
+        let reasonCode: MLClientErrorReasonCode;
+        let userMessage: string;
+        let retryable = false;
+
+        if (res.status === 401 || res.status === 403) {
+          reasonCode = 'ML_AUTH_FAILED';
+          userMessage = 'Internal service key mismatch between backend and ML service';
+          retryable = true;
+        } else if (res.status === 422 || res.status === 400) {
+          reasonCode = 'ML_VALIDATION_FAILED';
+          userMessage = 'Forecast request format was rejected';
+          retryable = false;
+        } else if (res.status === 404) {
+          reasonCode = 'ML_ROUTE_NOT_FOUND';
+          userMessage = 'Forecast endpoint not found on ML service';
+          retryable = true;
+        } else {
+          reasonCode = 'ML_CLIENT_ERROR';
+          userMessage = 'Could not generate forecast';
+          retryable = false;
+        }
+
+        let sanitizedDetails: string[] = [];
+        let sanitizedReason = userMessage;
+
         try {
           const body = (await res.json()) as any;
-          if (body && typeof body.detail === 'string') {
+          if (Array.isArray(body?.detail)) {
+            // FastAPI 422 detail array: extract loc and msg only, never values/payloads
+            sanitizedDetails = body.detail.map((d: any) => {
+              const loc = Array.isArray(d.loc)
+                ? d.loc.filter((p: any) => p !== 'body').join('.')
+                : String(d.loc || 'unknown');
+              return `${loc}: ${d.msg || 'invalid'}`;
+            });
+            if (sanitizedDetails.length > 0) {
+              sanitizedReason = sanitizedDetails.join('; ');
+            }
+          } else if (Array.isArray(body?.error?.details)) {
+            sanitizedDetails = body.error.details.map(
+              (d: any) => `${d.field || 'unknown'}: ${d.message || 'invalid'}`,
+            );
+            if (sanitizedDetails.length > 0) {
+              sanitizedReason = sanitizedDetails.join('; ');
+            }
+          } else if (typeof body?.detail === 'string') {
             sanitizedReason = body.detail.slice(0, 150);
-          } else if (body && typeof body.message === 'string') {
+          } else if (typeof body?.error?.message === 'string') {
+            sanitizedReason = body.error.message.slice(0, 150);
+          } else if (typeof body?.message === 'string') {
             sanitizedReason = body.message.slice(0, 150);
           }
         } catch {
@@ -81,16 +137,24 @@ async function fetchMLForecast(
         }
 
         logger.warn(
-          { requestId, statusCode: res.status, route: '/forecast' },
-          `ML forecast service returned 4xx client error: ${res.status} (${sanitizedReason})`,
+          {
+            requestId,
+            statusCode: res.status,
+            route: '/forecast',
+            reasonCode,
+            sanitizedReason,
+            ...(sanitizedDetails.length > 0 ? { validationErrors: sanitizedDetails } : {}),
+          },
+          `ML forecast service returned 4xx client error: ${res.status} [${reasonCode}] - ${sanitizedReason}`,
         );
 
         return {
           success: false,
           kind: 'client_error',
           statusCode: res.status,
-          reason: 'Could not generate forecast',
-          retryable: false,
+          reasonCode,
+          reason: userMessage,
+          retryable,
         };
       }
 
@@ -256,17 +320,7 @@ forecastRouter.get(
       }
 
       // 3. Mode selection by history length:
-      // >= 6 months -> existing monthly models (baseline vs Prophet, keep time-based evaluation)
-      // 2-5 months -> monthly baseline with wide ranges
-      // < 2 months (including 1 month) -> short-history mode
-      let selectedMode: 'short_history' | 'monthly_baseline' | 'monthly_standard';
-      if (monthsCount < 2 || daysSpan < 60) {
-        selectedMode = 'short_history';
-      } else if (monthsCount < 6 || daysSpan < 180) {
-        selectedMode = 'monthly_baseline';
-      } else {
-        selectedMode = 'monthly_standard';
-      }
+      const selectedMode: ForecastMode = determineForecastMode(daysSpan, monthsCount);
 
       const horizon = Math.min(
         Math.max(parseInt(req.query.horizon as string) || 3, 1),
@@ -274,28 +328,15 @@ forecastRouter.get(
       );
 
       // 4. Build payload based on selected mode
-      let payload: Record<string, unknown>;
-      if (selectedMode === 'short_history') {
-        payload = {
-          mode: 'short_history',
-          dailySeries,
-          horizon,
-          horizonDays: horizon * 30,
-        };
-      } else {
-        const series = monthlyTrend.map((item) => ({
-          month: item.month,
-          net: item.net,
-        }));
-        payload = {
-          mode: selectedMode,
-          series,
-          horizon,
-        };
-      }
+      const payload = buildForecastPayload(
+        selectedMode,
+        horizon,
+        dailySeries,
+        monthlyTrend,
+      );
 
       // 5. Call ML service
-      const mlResult = await fetchMLForecast(payload, req.requestId);
+      const mlResult = await fetchMLForecast(payload as unknown as Record<string, unknown>, req.requestId);
 
       if (!mlResult.success) {
         if (mlResult.kind === 'unreachable') {
@@ -311,12 +352,13 @@ forecastRouter.get(
           return;
         }
 
-        // 4xx client error
+        // 4xx client error: return mapped reasonCode and user-friendly reason
         res.status(200).json({
           available: false,
           status: 'generation_failed',
+          reasonCode: mlResult.reasonCode,
           reason: mlResult.reason,
-          retryable: false,
+          retryable: mlResult.retryable,
           monthlyTrend,
           weeklyTrend,
           dailyHistory: dailySeries,

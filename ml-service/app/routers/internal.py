@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 from app.security import verify_internal_key
 
 router = APIRouter(
-    prefix="/api/v1/internal",
     tags=["Internal ML Services"],
     dependencies=[Depends(verify_internal_key)],
 )
@@ -15,7 +14,8 @@ class InternalPingResponse(BaseModel):
     authorized: bool = Field(default=True)
 
 
-@router.get("/ping", response_model=InternalPingResponse)
+@router.get("/internal/ping", response_model=InternalPingResponse)
+@router.get("/api/v1/internal/ping", response_model=InternalPingResponse)
 async def internal_ping() -> InternalPingResponse:
     """Protected endpoint verifying internal service communication."""
     return InternalPingResponse()

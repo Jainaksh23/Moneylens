@@ -22,12 +22,14 @@ from app.routers import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        from app.services.rag_service import rag_service
-        rag_service.ensure_ingested_on_startup()
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning("RAG startup ingestion skipped/failed: %s", e)
+    import os
+    if settings.environment != "test" and not os.environ.get("PYTEST_CURRENT_TEST"):
+        try:
+            from app.services.rag_service import rag_service
+            rag_service.ensure_ingested_on_startup()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning("RAG startup ingestion skipped/failed: %s", e)
     yield
 
 
@@ -85,10 +87,20 @@ async def validation_exception_handler(
         }
         for err in exc.errors()
     ]
+    # Standard FastAPI detail array containing only loc and msg (no submitted values/inputs)
+    detail_array = [
+        {
+            "loc": list(err["loc"]),
+            "msg": err["msg"],
+            "type": err["type"],
+        }
+        for err in exc.errors()
+    ]
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
+            "detail": detail_array,
             "error": {
                 "code": "VALIDATION_ERROR",
                 "message": "Invalid request schema or payload",
