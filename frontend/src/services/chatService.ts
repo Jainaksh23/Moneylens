@@ -13,6 +13,7 @@ export interface ChatResponseDto {
   limitations?: string;
   disclaimer?: string;
   toolsUsed: string[];
+  nextSuggestions?: string[];
 }
 
 export interface ChatHistoryMessage {
@@ -23,6 +24,7 @@ export interface ChatHistoryMessage {
   limitations?: string;
   disclaimer?: string;
   toolsUsed?: string[];
+  nextSuggestions?: string[];
   createdAt: string;
 }
 

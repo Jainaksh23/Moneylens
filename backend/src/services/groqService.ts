@@ -1,25 +1,39 @@
 /**
- * Groq LLM Service with Strict Sandboxing, Timeout, Retries, and Provider Outage Fallback.
+ * Groq LLM Service with Strict Sandboxing, Timeout, Retries, Function Calling, and Daily Budget Cap.
  *
  * Capabilities:
  * - Model: llama-3.3-70b-versatile (from GROQ_MODEL or env)
- * - Timeout handling using AbortController (15s)
+ * - OpenAI-compatible function calling (tools, tool_calls, tool role messages)
+ * - Global daily token budget cap tracking
+ * - Timeout handling using AbortController
  * - Exponential backoff retry on transient 429/500/503 network errors
  * - Anti-Prompt-Injection defense: treats retrieved docs and user data as inert text
- * - Fallback synthesizer when GROQ_API_KEY is not set or service is unreachable
  */
 
 import { env, sanitizeEnvString } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import { AppError } from '../utils/errors.js';
 
+export interface ToolCallItem {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
 export interface ChatMessagePayload {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content?: string | null;
+  tool_calls?: ToolCallItem[];
+  tool_call_id?: string;
+  name?: string;
 }
 
 export interface GroqCompletionResponse {
-  content: string;
+  content: string | null;
+  toolCalls?: ToolCallItem[];
   tokenUsage?: {
     promptTokens: number;
     completionTokens: number;
@@ -27,6 +41,20 @@ export interface GroqCompletionResponse {
   };
   usedFallback: boolean;
 }
+
+// Global daily LLM token tracker
+interface GlobalBudgetTracker {
+  dateKey: string; // YYYY-MM-DD
+  tokensUsed: number;
+  requestCount: number;
+}
+
+const GLOBAL_DAILY_TOKEN_LIMIT = parseInt(process.env.GLOBAL_DAILY_TOKEN_LIMIT || '1000000', 10);
+let globalBudget: GlobalBudgetTracker = {
+  dateKey: new Date().toISOString().slice(0, 10),
+  tokensUsed: 0,
+  requestCount: 0,
+};
 
 export class GroqService {
   private apiKey: string | undefined;
@@ -41,7 +69,35 @@ export class GroqService {
   }
 
   /**
+   * Enforces global daily budget cap across all users.
+   */
+  private checkGlobalBudget(): void {
+    const today = new Date().toISOString().slice(0, 10);
+    if (globalBudget.dateKey !== today) {
+      globalBudget = { dateKey: today, tokensUsed: 0, requestCount: 0 };
+    }
+
+    if (globalBudget.tokensUsed >= GLOBAL_DAILY_TOKEN_LIMIT) {
+      throw new AppError(
+        'The global daily AI assistant capacity has been reached. Please check back tomorrow.',
+        429,
+        'LLM_RATE_LIMITED',
+      );
+    }
+  }
+
+  public recordGlobalTokens(tokens: number): void {
+    const today = new Date().toISOString().slice(0, 10);
+    if (globalBudget.dateKey !== today) {
+      globalBudget = { dateKey: today, tokensUsed: 0, requestCount: 0 };
+    }
+    globalBudget.tokensUsed += tokens;
+    globalBudget.requestCount += 1;
+  }
+
+  /**
    * Generates completion with retry, backoff, and classified error codes.
+   * Supports OpenAI function calling tools.
    */
   async generateCompletion(
     messages: ChatMessagePayload[],
@@ -51,8 +107,12 @@ export class GroqService {
       timeoutMs?: number;
       maxRetries?: number;
       requestId?: string;
+      tools?: any[];
+      tool_choice?: 'auto' | 'none' | any;
     } = {}
   ): Promise<GroqCompletionResponse> {
+    this.checkGlobalBudget();
+
     const temperature = options.temperature ?? 0.1;
     const maxTokens = options.maxTokens ?? 1024;
     const timeoutMs = options.timeoutMs ?? 30000;
@@ -79,6 +139,18 @@ export class GroqService {
     const baseUrlHost = new URL(this.baseUrl).host;
     let delay = 500;
 
+    const requestBody: Record<string, any> = {
+      model: currentModel,
+      messages,
+      temperature,
+      max_tokens: maxTokens,
+    };
+
+    if (options.tools && options.tools.length > 0) {
+      requestBody.tools = options.tools;
+      requestBody.tool_choice = options.tool_choice || 'auto';
+    }
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -90,12 +162,7 @@ export class GroqService {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${apiKey}`,
           },
-          body: JSON.stringify({
-            model: currentModel,
-            messages,
-            temperature,
-            max_tokens: maxTokens,
-          }),
+          body: JSON.stringify(requestBody),
           signal: controller.signal,
         });
 
@@ -209,8 +276,11 @@ export class GroqService {
 
         const data: any = await response.json();
         const choice = data.choices?.[0];
-        const content = choice?.message?.content || '';
-        if (!content.trim()) {
+        const message = choice?.message;
+        const content = message?.content || null;
+        const toolCalls: ToolCallItem[] | undefined = message?.tool_calls;
+
+        if (!content && (!toolCalls || toolCalls.length === 0)) {
           throw new AppError(
             'Groq API returned empty or missing completion content',
             502,
@@ -218,13 +288,20 @@ export class GroqService {
           );
         }
 
+        const tokens = {
+          promptTokens: data.usage?.prompt_tokens || 0,
+          completionTokens: data.usage?.completion_tokens || 0,
+          totalTokens: data.usage?.total_tokens || 0,
+        };
+
+        if (tokens.totalTokens > 0) {
+          this.recordGlobalTokens(tokens.totalTokens);
+        }
+
         return {
           content,
-          tokenUsage: {
-            promptTokens: data.usage?.prompt_tokens || 0,
-            completionTokens: data.usage?.completion_tokens || 0,
-            totalTokens: data.usage?.total_tokens || 0,
-          },
+          toolCalls,
+          tokenUsage: tokens,
           usedFallback: false,
         };
       } catch (err: any) {
@@ -288,9 +365,7 @@ export class GroqService {
   }
 
   /**
-   * Performs an optional startup self-check:
-   * Calls GET {baseUrl}/models once with the API key and checks whether the configured model is available.
-   * Logs only a boolean and the model name (never secrets or full list).
+   * Performs startup self-check.
    */
   async verifyModelAvailability(requestId = 'startup-check'): Promise<boolean | null> {
     const rawKey = env.GROQ_API_KEY ?? this.apiKey;

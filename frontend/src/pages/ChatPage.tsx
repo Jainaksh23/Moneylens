@@ -18,12 +18,14 @@ import type { ChatHistoryMessage, ChatEvidence } from '../services/chatService';
 import { ApiClientError } from '../services/apiClient';
 
 const SUGGESTIONS = [
+  'Where did most of my money go last month?',
+  'Which subscriptions am I paying for?',
+  'Compare this month with last month',
+  'Biggest expenses this week',
+  'How much can I save per month?',
   'March mein food pe kitna gaya?',
   'Can you explain the 50/30/20 budgeting rule?',
   'How many months of expenses for an emergency fund?',
-  'What is an SIP and how does compounding work?',
-  'What is the difference between debt snowball and avalanche?',
-  'Which penny stock should I buy for guaranteed returns tomorrow?',
 ];
 
 export function getFriendlyChatError(
@@ -154,6 +156,7 @@ export const ChatPage: React.FC = () => {
         limitations: response.limitations,
         disclaimer: response.disclaimer,
         toolsUsed: response.toolsUsed,
+        nextSuggestions: response.nextSuggestions,
         createdAt: new Date().toISOString(),
       };
 
@@ -330,6 +333,28 @@ export const ChatPage: React.FC = () => {
                   <div className="mt-2.5 flex items-start space-x-1.5 rounded bg-amber-950/20 border border-amber-900/30 px-2 py-1 text-[11px] text-amber-300/90">
                     <AlertTriangle className="h-3 w-3 text-amber-400 flex-shrink-0 mt-0.5" />
                     <span>{msg.limitations}</span>
+                  </div>
+                )}
+
+                {/* Next Question Suggestions */}
+                {msg.role === 'assistant' && msg.nextSuggestions && msg.nextSuggestions.length > 0 && (
+                  <div className="mt-3 pt-2.5 border-t border-gray-800/80">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5 flex items-center space-x-1">
+                      <Sparkles className="h-2.5 w-2.5 text-emerald-400" />
+                      <span>What you can ask next:</span>
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {msg.nextSuggestions.map((sug, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => handleSend(sug)}
+                          className="text-left text-[11px] px-2.5 py-1 rounded-lg bg-gray-900/90 hover:bg-gray-800 border border-gray-800 hover:border-emerald-500/40 text-gray-300 transition-colors"
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 

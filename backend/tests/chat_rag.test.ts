@@ -69,10 +69,10 @@ describe('Phase 7: RAG Financial Chat & Grounded Security Suite', () => {
           const systemMsg = body.messages?.find((m: any) => m.role === 'system')?.content || '';
           if (systemMsg.includes('No expense transactions recorded')) {
             reply = 'You have no expense transactions recorded for Food in this period (₹0).';
-          } else if (systemMsg.includes('14,500') || systemMsg.includes('14500')) {
-            reply = 'Based on your records, your March food expense was ₹14,500.';
           } else if (systemMsg.includes('Netflix') || systemMsg.includes('649')) {
             reply = 'Your upcoming bills include Netflix at ₹649.';
+          } else if (systemMsg.includes('14,500') || systemMsg.includes('14500')) {
+            reply = 'Based on your records, your March food expense was ₹14,500.';
           } else if (systemMsg.includes('50/30/20')) {
             reply = 'The 50/30/20 rule is a budgeting framework: 50% Needs, 30% Wants, 20% Savings.';
           }
