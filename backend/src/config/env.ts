@@ -42,11 +42,7 @@ const envSchema = z.object({
   JWT_EXPIRY: z.string().default('7d'),
   COOKIE_NAME: z.string().default('moneylens_token'),
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
-  ML_SERVICE_URL: z
-    .string()
-    .url()
-    .default('http://localhost:8000')
-    .transform((val) => val.replace(/\/+$/, '')),
+  ML_SERVICE_URL: z.string().url().default('http://localhost:8000'),
   INTERNAL_API_KEY: z
     .string()
     .min(16, 'INTERNAL_API_KEY must be at least 16 characters')
