@@ -13,6 +13,7 @@ const ACCOUNT_REGEX = /\b\d{9,18}\b/g;
 const CARD_REGEX = /\b(?:\d{4}[-\s]?){3}\d{4}\b/g;
 const PHONE_REGEX = /\b[6-9]\d{9}\b/g;
 const EMAIL_REGEX = /([a-zA-Z0-9_\-.]{2})[a-zA-Z0-9_\-.]*@([a-zA-Z0-9_\-.]{2})[a-zA-Z0-9_\-.]*\.([a-zA-Z]{2,5})/gi;
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 /**

@@ -676,7 +676,7 @@ ${ragUnavailable ? 'Knowledge retrieval service is offline.' : knowledgeContextT
     ];
 
     let finalAssistantAnswer = '';
-    let totalTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+    const totalTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     let toolRounds = 0;
     const maxToolRounds = 5;
     let usedDeterministicFallback = false;
