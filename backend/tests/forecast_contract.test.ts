@@ -92,7 +92,44 @@ describe('Cash-Flow Forecast Contract & Configuration Drift Tests', () => {
       }
     });
 
-    // Fixture 2: 35-day series (< 60 days)
+    // Fixture 2: 29-day series (< 60 days, e.g. user with 29 days of transactions)
+    it('29-day series produces short_history payload with valid 3M and 6M horizon mappings', () => {
+      const dailySeries: DailyCashFlowItem[] = Array.from({ length: 29 }, (_, i) => ({
+        date: `2026-01-${String(i + 1).padStart(2, '0')}`,
+        income: i % 7 === 0 ? 3200 : 0,
+        expense: 750 + i * 20,
+        net: (i % 7 === 0 ? 3200 : 0) - (750 + i * 20),
+      }));
+
+      const mode = determineForecastMode(29, 1);
+      expect(mode).toBe('short_history');
+
+      // Test 3M horizon mapping: horizon = 3, horizonDays = 90
+      const payload3M = buildForecastPayload(mode, 3, dailySeries);
+      expect(payload3M.mode).toBe('short_history');
+      expect(payload3M.horizon).toBe(3);
+      expect(payload3M.horizonDays).toBe(90);
+      expect(payload3M.dailySeries).toBeDefined();
+      expect(payload3M.dailySeries!.length).toBe(29);
+      expect(payload3M.series).toBeUndefined();
+
+      // Test 6M horizon mapping: horizon = 6, horizonDays = 180 (capped at 180)
+      const payload6M = buildForecastPayload(mode, 6, dailySeries);
+      expect(payload6M.mode).toBe('short_history');
+      expect(payload6M.horizon).toBe(6);
+      expect(payload6M.horizonDays).toBe(180);
+      expect(payload6M.dailySeries!.length).toBe(29);
+
+      // Verify date format and number types
+      for (const pt of payload3M.dailySeries!) {
+        expect(pt.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(typeof pt.income).toBe('number');
+        expect(typeof pt.expense).toBe('number');
+        expect(typeof pt.net).toBe('number');
+      }
+    });
+
+    // Fixture 3: 35-day series (< 60 days)
     it('35-day series produces short_history payload spanning two months', () => {
       const dailySeries: DailyCashFlowItem[] = [
         ...Array.from({ length: 31 }, (_, i) => ({

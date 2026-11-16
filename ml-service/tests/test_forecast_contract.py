@@ -34,6 +34,25 @@ def fixture_20_day_short_history() -> dict[str, Any]:
     }
 
 
+def fixture_29_day_short_history(horizon: int = 3) -> dict[str, Any]:
+    """29-day daily series (<60 days): short_history mode with 3M and 6M horizon mapping."""
+    horizon_days = min(horizon * 30, 180)
+    return {
+        "mode": "short_history",
+        "horizon": horizon,
+        "horizonDays": horizon_days,
+        "dailySeries": [
+            {
+                "date": f"2026-01-{i:02d}",
+                "income": 3200.0 if i % 7 == 0 else 0.0,
+                "expense": 750.0 + (i * 20.0),
+                "net": (3200.0 if i % 7 == 0 else 0.0) - (750.0 + (i * 20.0)),
+            }
+            for i in range(1, 30)
+        ],
+    }
+
+
 def fixture_35_day_short_history() -> dict[str, Any]:
     """35-day daily series (<60 days): short_history mode."""
     days = []
@@ -115,6 +134,33 @@ class TestForecastContract:
         resp_obj = ForecastResponse.model_validate(res)
         assert resp_obj.available is True
         assert resp_obj.mode == "short_history"
+
+    def test_29_day_fixture_matches_pydantic_schema(self):
+        # Test 3M horizon: horizon = 3, horizonDays = 90
+        payload_3m = fixture_29_day_short_history(horizon=3)
+        req_3m = ForecastRequest.model_validate(payload_3m)
+
+        assert req_3m.mode == "short_history"
+        assert req_3m.horizon == 3
+        assert req_3m.horizonDays == 90
+        assert req_3m.dailySeries is not None
+        assert len(req_3m.dailySeries) == 29
+
+        res_3m = generate_short_history_forecast(
+            [d.model_dump() for d in req_3m.dailySeries],
+            horizon=req_3m.horizon,
+            horizon_days=req_3m.horizonDays,
+        )
+        resp_obj_3m = ForecastResponse.model_validate(res_3m)
+        assert resp_obj_3m.available is True
+        assert resp_obj_3m.mode == "short_history"
+        assert resp_obj_3m.dataCoverage.days == 29
+
+        # Test 6M horizon: horizon = 6, horizonDays = 180 (capped at schema le=180)
+        payload_6m = fixture_29_day_short_history(horizon=6)
+        req_6m = ForecastRequest.model_validate(payload_6m)
+        assert req_6m.horizon == 6
+        assert req_6m.horizonDays == 180
 
     def test_35_day_fixture_matches_pydantic_schema(self):
         payload = fixture_35_day_short_history()
